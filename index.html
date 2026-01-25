@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Essentials Market</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="js/app.js"></script>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="header" role="banner">
+    <div class="container header-bar">
+      
+      <!-- 1. MOVED BURGER BUTTON HERE (Left side) -->
+      <button
+        id="menu-btn"
+        class="icon-btn mobile-only"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span class="burger" aria-hidden="true"></span>
+      </button>
+
+      <!-- 2. LOGO (Left side, next to burger) -->
+      <a href="#" class="logo" aria-label="Essentials Market home">
+        Essentials<span>.</span>
+      </a>
+
+      <!-- 3. DESKTOP NAV (Centered/Rightish on desktop) -->
+      <nav class="desktop-nav" aria-label="Primary">
+        <a href="#shop">Shop</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <!-- 4. CART ACTION (Pushed to far right via CSS) -->
+      <div class="header-actions">
+        <button id="cart-btn" class="icon-btn" type="button" aria-label="Open cart">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span id="cart-count" class="badge" aria-label="Cart items">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown -->
+    <div id="mobile-menu" class="mobile-menu" hidden>
+      <nav class="mobile-nav-links" aria-label="Mobile">
+        <a href="#shop">Shop Products</a>
+        <a href="#about">About Us</a>
+        <a href="#contact">Contact Support</a>
+        <a href="#login" class="secondary-link">Sign In</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Daily Essentials.</h1>
+      <p>Order via WhatsApp. Delivered to your door.</p>
+    </div>
+  </section>
+
+  <main id="main" class="container">
+    <section id="shop" aria-label="Shop">
+      <div class="controls">
+        <h2>All Products</h2>
+        <select id="sort-select" aria-label="Sort products">
+          <option value="default">Sort by...</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+
+      <div id="product-grid" class="product-grid" aria-live="polite">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <section id="about" class="sr-section" aria-label="About">
+      <h2>About</h2>
+      <p>Fresh groceries delivered to your doorstep with simple WhatsApp ordering.</p>
+    </section>
+
+    <section id="contact" class="sr-section" aria-label="Contact">
+      <h2>Contact</h2>
+      <p>Need help? Use the menu links or WhatsApp checkout to reach us.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <a href="#" class="logo footer-logo">Essentials<span>.</span></a>
+        <p>Fresh groceries delivered to your doorstep with simple WhatsApp ordering.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="#">Fruit &amp; Veg</a>
+        <a href="#">Dairy</a>
+        <a href="#">Bakery</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="#">FAQ</a>
+        <a href="#">Delivery Zones</a>
+        <a href="#">Contact Us</a>
+      </div>
+    </div>
+    <div class="footer-bottom container">
+      <p>&copy; 2024 Essentials Market. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Cart Modal -->
+  <div id="cart-modal" class="cart-modal hidden" role="dialog" aria-modal="true" aria-label="Cart">
+    <div class="cart-content">
+      <div class="cart-header">
+        <h3>Your Cart</h3>
+        <button id="close-cart" class="close-btn" type="button" aria-label="Close cart">&times;</button>
+      </div>
+      <div id="cart-items" class="cart-items">
+        <p class="empty-msg">Your cart is empty.</p>
+      </div>
+      <div class="cart-footer">
+        <div class="total-row">
+          <span>Total:</span>
+          <span id="cart-total">R 0.00</span>
+        </div>
+        <button id="checkout-btn" class="btn btn-whatsapp" type="button">Order on WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">Item added to cart</div>
+</body>
+</html>
