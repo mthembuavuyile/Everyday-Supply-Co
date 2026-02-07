@@ -1,35 +1,58 @@
-/**
- * js/data.js
- * MOCK DATABASE
- */
+import { svgToUrl } from './utils.js';
 
+export const WHATSAPP_NUMBER = "+27 78 328 4393"; // This is the real number
+
+// Keep only noodle SVGs
+const svgs = {
+  noodlesBox: `<?xml version='1.0' encoding='utf-8'?><svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="100%" height="100%" fill="#eef2f6" /><path fill="#F7B733" d="M100.205 184.715h5.1v31.09h-2.97q-.69 0-1.15-.23-.46-.22-.89-.76l-16.23-20.73q.13 1.42.13 2.63v19.09h-5.1v-31.09h3.03q.37 0 .64.03.27.04.47.13.2.1.4.28.19.18.43.49l16.29 20.81q-.06-.76-.1-1.49-.05-.73-.05-1.35zm20.94 8.69q2.46 0 4.47.79 2.01.8 3.44 2.26t2.2 3.57.77 4.71q0 2.62-.77 4.73-.77 2.1-2.2 3.59-1.43 1.48-3.44 2.28-2.01.79-4.47.79-2.47 0-4.49-.79-2.02-.8-3.45-2.28-1.43-1.49-2.21-3.59-.79-2.11-.79-4.73 0-2.6.79-4.71.78-2.11 2.21-3.57t3.45-2.26q2.02-.79 4.49-.79m0 18.64q2.76 0 4.08-1.85t1.32-5.42-1.32-5.44-4.08-1.87q-2.79 0-4.13 1.88-1.35 1.88-1.35 5.43t1.35 5.41q1.34 1.86 4.13 1.86m24.71-18.64q2.45 0 4.46.79 2.01.8 3.44 2.26t2.2 3.57q.78 2.11.78 4.71 0 2.62-.78 4.73-.77 2.1-2.2 3.59-1.43 1.48-3.44 2.28-2.01.79-4.46.79-2.47 0-4.5-.79-2.02-.8-3.45-2.28-1.43-1.49-2.21-3.59-.79-2.11-.79-4.73 0-2.6.79-4.71.78-2.11 2.21-3.57t3.45-2.26q2.03-.79 4.5-.79m0 18.64q2.75 0 4.07-1.85t1.32-5.42-1.32-5.44-4.07-1.87q-2.8 0-4.14 1.88t-1.34 5.43 1.34 5.41 4.14 1.86m28.79-2.78v-9.89q-.91-1.09-1.97-1.54-1.06-.46-2.29-.46-1.2 0-2.17.46-.97.45-1.66 1.36t-1.05 2.32q-.37 1.41-.37 3.32 0 1.94.32 3.28.31 1.35.89 2.2t1.42 1.22q.84.38 1.87.38 1.65 0 2.81-.69t2.2-1.96m0-25.41h5.31v31.95h-3.25q-1.05 0-1.33-.97l-.45-2.13q-1.34 1.53-3.07 2.48-1.73.94-4.03.94-1.8 0-3.31-.75-1.5-.75-2.59-2.18t-1.68-3.54-.59-4.82q0-2.45.67-4.55.66-2.11 1.91-3.66t2.99-2.42 3.91-.87q1.85 0 3.16.58t2.35 1.57zm10.62 0h5.31v31.95h-5.31zm14.81 18.38h10.02q0-1.03-.29-1.94-.29-.92-.87-1.6-.58-.69-1.47-1.09-.9-.4-2.08-.4-2.3 0-3.62 1.31-1.32 1.32-1.69 3.72m13.55 3.21h-13.66q.13 1.7.61 2.93.47 1.24 1.24 2.04.78.81 1.84 1.21 1.07.4 2.36.4t2.22-.3q.94-.31 1.63-.67.7-.37 1.23-.67t1.02-.3q.67 0 .99.5l1.53 1.93q-.88 1.03-1.98 1.73t-2.29 1.12-2.43.59-2.4.17q-2.3 0-4.28-.76-1.97-.76-3.44-2.26-1.46-1.49-2.3-3.7-.84-2.2-.84-5.1 0-2.26.74-4.25.73-1.99 2.09-3.46 1.37-1.47 3.33-2.33 1.97-.86 4.44-.86 2.09 0 3.85.66 1.77.67 3.03 1.95 1.27 1.28 1.99 3.14t.72 4.24q0 1.21-.25 1.63-.26.42-.99.42m19.88-9.31-1.2 1.91q-.21.34-.45.48t-.6.14q-.39 0-.83-.21-.44-.22-1.02-.48-.58-.27-1.32-.49-.75-.21-1.76-.21-1.57 0-2.46.66-.89.67-.89 1.74 0 .71.46 1.2.46.48 1.23.85.76.36 1.73.65t1.96.64q1 .34 1.97.78t1.73 1.12q.77.68 1.23 1.62.46.95.46 2.28 0 1.59-.57 2.94-.57 1.34-1.69 2.32-1.11.98-2.76 1.53-1.64.54-3.79.54-1.14 0-2.23-.2t-2.09-.57q-.99-.37-1.84-.86t-1.5-1.08l1.23-2.02q.23-.36.56-.56.32-.19.81-.19.5 0 .94.28t1.02.6q.58.33 1.36.6.79.28 1.99.28.95 0 1.63-.22.67-.23 1.11-.59.45-.37.65-.85.2-.49.2-1 0-.78-.46-1.27t-1.22-.86q-.77-.37-1.75-.66-.97-.29-1.99-.63-1.03-.34-2-.81-.98-.46-1.75-1.17-.76-.71-1.22-1.74t-.46-2.49q0-1.36.53-2.58.54-1.23 1.58-2.14 1.05-.92 2.61-1.46 1.55-.55 3.6-.55 2.28 0 4.15.75t3.11 1.98m21.31 15.15h5.85q1.61 0 2.71-.38 1.09-.39 1.75-1.03.66-.65.95-1.51t.29-1.83q0-1.01-.33-1.81-.32-.81-1.01-1.38t-1.77-.87q-1.09-.3-2.61-.3h-5.83zm4.92-22.1h-4.92v8.99h4.6q2.97 0 4.48-1.08 1.52-1.07 1.52-3.41 0-2.43-1.38-3.47-1.37-1.03-4.3-1.03m-10.7-4.47h10.7q3.06 0 5.23.58t3.56 1.66q1.38 1.07 2.03 2.6.64 1.52.64 3.44 0 1.09-.32 2.09t-1 1.88q-.68.87-1.72 1.58t-2.48 1.2q6.41 1.44 6.41 6.92 0 1.98-.76 3.66-.75 1.67-2.19 2.89-1.44 1.21-3.55 1.9-2.1.69-4.81.69h-11.74zm37.24 8.69q2.45 0 4.46.79 2.01.8 3.44 2.26t2.2 3.57.77 4.71q0 2.62-.77 4.73-.77 2.1-2.2 3.59-1.43 1.48-3.44 2.28-2.01.79-4.46.79-2.48 0-4.5-.79-2.02-.8-3.45-2.28-1.43-1.49-2.21-3.59-.79-2.11-.79-4.73 0-2.6.79-4.71.78-2.11 2.21-3.57t3.45-2.26q2.02-.79 4.5-.79m0 18.64q2.75 0 4.07-1.85t1.32-5.42-1.32-5.44-4.07-1.87q-2.8 0-4.14 1.88-1.35 1.88-1.35 5.43t1.35 5.41q1.34 1.86 4.14 1.86m27.09-7.85 7.54 11.61h-5.12q-.58 0-.93-.3-.36-.3-.59-.69l-4.67-7.67q-.1.36-.24.68-.14.33-.32.61l-4.12 6.38q-.24.37-.58.68-.35.31-.86.31h-4.76l7.57-11.37-7.27-10.69h5.12q.58 0 .86.16t.5.53l4.62 7.35q.24-.73.67-1.44l3.71-5.8q.48-.8 1.23-.8h4.88z" /></svg>`,
+  noodlesBulk: `<?xml version='1.0' encoding='utf-8'?><svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="100%" height="100%" fill="#eef2f6" /><path fill="#F7B733" d="M74.135 138.98h3.67v22.41h-2.14q-.5 0-.83-.16-.33-.17-.64-.55l-11.71-14.94q.1 1.02.1 1.89v13.76h-3.68v-22.41h2.19q.26 0 .46.02.19.02.34.09t.28.2q.14.14.31.35l11.75 15.01q-.04-.55-.07-1.07-.03-.53-.03-.98zm15.09 6.26q1.77 0 3.22.57 1.45.58 2.48 1.63t1.59 2.57.56 3.4q0 1.89-.56 3.41t-1.59 2.59-2.48 1.64-3.22.57q-1.78 0-3.24-.57-1.45-.57-2.48-1.64-1.04-1.07-1.6-2.59-.57-1.52-.57-3.41 0-1.88.57-3.4.56-1.52 1.6-2.57 1.03-1.05 2.48-1.63 1.46-.57 3.24-.57m0 13.44q1.99 0 2.94-1.34.95-1.33.95-3.9t-.95-3.92-2.94-1.35q-2.01 0-2.98 1.35-.97 1.36-.97 3.92t.97 3.9 2.98 1.34m17.81-13.44q1.77 0 3.22.57 1.45.58 2.48 1.63t1.59 2.57q.55 1.52.55 3.4 0 1.89-.55 3.41-.56 1.52-1.59 2.59t-2.48 1.64-3.22.57q-1.78 0-3.24-.57-1.45-.57-2.49-1.64-1.03-1.07-1.59-2.59-.57-1.52-.57-3.41 0-1.88.57-3.4.56-1.52 1.59-2.57 1.04-1.05 2.49-1.63 1.46-.57 3.24-.57m0 13.44q1.99 0 2.94-1.34.95-1.33.95-3.9t-.95-3.92-2.94-1.35q-2.01 0-2.98 1.35-.97 1.36-.97 3.92t.97 3.9 2.98 1.34m20.76-2v-7.13q-.65-.79-1.42-1.12-.77-.32-1.65-.32-.87 0-1.57.32-.7.33-1.19.99-.5.66-.76 1.67-.26 1.02-.26 2.39 0 1.4.22 2.37t.64 1.58 1.03.88q.6.27 1.34.27 1.2 0 2.04-.49.83-.5 1.58-1.41m0-18.32h3.82v23.03h-2.34q-.76 0-.96-.7l-.32-1.53q-.96 1.1-2.21 1.78t-2.91.68q-1.3 0-2.38-.54-1.09-.54-1.87-1.57t-1.21-2.55-.43-3.48q0-1.76.48-3.28t1.38-2.64q.9-1.11 2.16-1.74 1.25-.63 2.82-.63 1.33 0 2.28.42.94.42 1.69 1.13zm7.65 0h3.83v23.03h-3.83zm10.68 13.25h7.23q0-.74-.21-1.4t-.63-1.16q-.42-.49-1.06-.78-.65-.29-1.5-.29-1.66 0-2.61.95-.95.94-1.22 2.68m9.77 2.31h-9.84q.09 1.22.43 2.11.34.9.9 1.48t1.32.87q.77.28 1.7.28t1.61-.21q.67-.22 1.17-.49.51-.26.89-.48.38-.21.73-.21.48 0 .72.35l1.1 1.4q-.64.74-1.43 1.25-.79.5-1.65.8t-1.75.43q-.89.12-1.73.12-1.66 0-3.08-.55-1.43-.55-2.48-1.63-1.06-1.07-1.66-2.66-.61-1.59-.61-3.68 0-1.63.53-3.06.53-1.44 1.51-2.5t2.4-1.68 3.2-.62q1.51 0 2.78.48t2.18 1.4q.92.92 1.44 2.27.52 1.34.52 3.06 0 .86-.19 1.17-.19.3-.71.3m14.34-6.71-.87 1.38q-.16.25-.33.35t-.43.1q-.28 0-.6-.16-.32-.15-.74-.35-.41-.19-.95-.35-.53-.15-1.26-.15-1.13 0-1.78.48-.64.48-.64 1.25 0 .52.33.87.34.34.89.61.55.26 1.24.47.7.21 1.42.46t1.42.56q.7.32 1.25.81t.88 1.17q.34.68.34 1.64 0 1.15-.41 2.12-.42.97-1.22 1.67-.81.71-1.99 1.1-1.19.4-2.74.4-.82 0-1.6-.15-.79-.15-1.51-.41t-1.33-.62-1.08-.78l.89-1.45q.17-.27.4-.4.23-.14.59-.14.35 0 .67.2t.74.43.98.44q.57.2 1.44.2.68 0 1.17-.17.49-.16.8-.42.32-.27.47-.61.15-.35.15-.73 0-.55-.34-.91-.33-.36-.88-.62t-1.26-.47q-.7-.21-1.44-.46-.73-.25-1.44-.58t-1.26-.85q-.55-.51-.88-1.25-.33-.75-.33-1.8 0-.98.39-1.86.38-.88 1.13-1.54.76-.66 1.88-1.06 1.12-.39 2.6-.39 1.64 0 2.99.54t2.25 1.43m15.36 10.93h4.21q1.16 0 1.95-.28.8-.28 1.27-.75.47-.46.68-1.08t.21-1.32q0-.73-.23-1.31-.24-.58-.73-.99-.5-.41-1.28-.63t-1.88-.22h-4.2zm3.55-15.94h-3.55v6.48h3.31q2.14 0 3.23-.77 1.1-.78 1.1-2.47 0-1.75-.99-2.5-1-.74-3.1-.74m-7.72-3.22h7.72q2.2 0 3.76.42 1.57.41 2.57 1.19 1 .77 1.46 1.87.47 1.11.47 2.48 0 .8-.24 1.52-.23.72-.72 1.34-.48.63-1.24 1.14-.75.51-1.79.87 4.62 1.04 4.62 4.99 0 1.43-.54 2.64t-1.58 2.08q-1.04.88-2.56 1.37-1.52.5-3.47.5h-8.46zm29.68 6.51h3.83v15.9h-2.34q-.76 0-.96-.7l-.27-1.27q-.97.99-2.15 1.61-1.18.61-2.78.61-1.3 0-2.3-.44-1-.45-1.68-1.25-.68-.81-1.03-1.92-.35-1.1-.35-2.44v-10.1h3.83v10.1q0 1.46.67 2.26.68.8 2.03.8.99 0 1.86-.45.86-.44 1.64-1.21zm7.66-7.13h3.82v23.03h-3.82zm7.65 0h3.83v13.19h.71q.39 0 .62-.1.22-.1.45-.41l3.96-4.89q.24-.32.55-.49.3-.17.78-.17h3.5l-4.94 5.9q-.53.7-1.15 1.07.33.23.58.54.26.31.49.67l5.3 7.72h-3.46q-.44 0-.77-.15-.33-.14-.54-.53l-4.06-6.03q-.22-.36-.45-.47-.24-.11-.7-.11h-.87v7.29h-3.83z" /></svg>`,
+};
+
+// Noodles-only catalog
+const noodleCatalog = [
+  {
+    brand: "Maggi 2-Minute Noodles",
+    flavors: ["Chicken", "Beef", "Durban Curry", "Cheese", "Crispy Chicken", "Boerewors", "Steak & Chops"],
+    price5Pack: 36.99,
+  },
+  {
+    brand: "Kellogg’s Instant Noodles",
+    flavors: ["Chicken", "Beef", "Cheese", "Durban Curry", "Vegetable Curry", "Hot & Spicy"],
+    price5Pack: 34.99,
+  },
+];
+
+function makeNoodleProducts({ startId }) {
+  let id = startId;
+  const results = [];
+
+  for (const b of noodleCatalog) {
+    const uniqueFlavors = Array.from(new Set(b.flavors.map((f) => f.trim())));
+
+    for (const flavor of uniqueFlavors) {
+      const name = `${b.brand} — ${flavor} (5-Pack)`;
+      const sku = `${b.brand}-${flavor}-5pk`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      results.push({
+        id: id++,
+        sku,
+        name,
+        brand: b.brand,
+        flavor,
+        pack: "5-Pack",
+        category: "Noodles",
+        price: b.price5Pack,
+        image: svgToUrl(svgs.noodlesBulk),
+        badge: { type: "bulk", text: "Value Pack" },
+        inStock: true,
+      });
+    }
+  }
+
+  return results;
+}
+
+// Final export: noodles only
 export const products = [
-    { id: 1, name: "Sunlight Dish Liquid", size: "750ml", category: "Cleaning", price: 24.99, unitPrice: "R0.03 / ml", image: "images/Sunlight Dish Liquid.jpg", badge: { type: "hot", text: "Best Seller" } },
-    { id: 2, name: "Tastic Rice", size: "2kg", category: "Pantry", price: 38.50, unitPrice: "R19.25/kg", image: "images/tastic-rice.jpg", badge: null },
-    { id: 3, name: "Chicken Noodles (Box)", size: "48 x 75g", category: "Bulk", price: 115.00, unitPrice: "R2.40/ea", image: "https://placehold.co/400x400/eef2f6/F7B733?text=Noodles+Box", badge: { type: "bulk", text: "Bulk Deal" } },
-    { id: 4, name: "Domestos Bleach", size: "750ml", category: "Cleaning", price: 32.00, unitPrice: null, image: "https://placehold.co/400x400/eef2f6/0E7A5F?text=Bleach", badge: null },
-    { id: 5, name: "Baby Soft Toilet Paper", size: "9 Pack", category: "Household", price: 89.99, unitPrice: "R10/roll", image: "images/tissue.jpg", badge: null },
-    { id: 6, name: "Jacobs Coffee", size: "200g", category: "Pantry", price: 149.00, unitPrice: null, image: "https://placehold.co/400x400/eef2f6/0E7A5F?text=Coffee", badge: null },
-    { id: 7, name: "Omo Auto Washing Powder", size: "2kg", category: "Cleaning", price: 125.00, unitPrice: null, image: "https://placehold.co/400x400/eef2f6/F7B733?text=Omo", badge: { type: "hot", text: "Hot" } },
-    { id: 8, name: "Coca-Cola Original", size: "2L", category: "Drinks", price: 26.00, unitPrice: null, image: "https://placehold.co/400x400/eef2f6/E53E3E?text=Coke", badge: null },
-
-    // Additional items from your second array
-    { id: 9, name: "Handy Andy Cream", size: "750ml", category: "Cleaning", price: 29.50, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/0E7A5F?text=Cream+Cleaner", badge: null },
-    { id: 10, name: "Chicken Noodles (Box of 24)", size: null, category: "Pantry", price: 115.00, unitPrice: "R4.79 / unit", image: "https://placehold.co/300x300/eef2f6/F7B733?text=Noodles+Bulk", badge: { type: "bulk", text: "Bulk Save" } },
-    { id: 11, name: "Heavy Duty Yard Broom", size: null, category: "Household", price: 85.00, unitPrice: null, image: "images/broom.jpg", badge: null },
-    { id: 12, name: "Microfiber Cloths (5 Pack)", size: null, category: "Cleaning", price: 45.00, unitPrice: "R9.00 / unit", image: "https://placehold.co/300x300/eef2f6/0E7A5F?text=Cloths", badge: null },
-    { id: 13, name: "Disposable Coffee Cups (50)", size: null, category: "Office / B2B", price: 65.00, unitPrice: "R1.30 / cup", image: "https://placehold.co/300x300/eef2f6/888?text=Paper+Cups", badge: { type: "bulk", text: "Office" } },
-    { id: 14, name: "Cordless Kettle (1.7L)", size: null, category: "Appliances", price: 229.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/333?text=Kettle", badge: null },
-    { id: 15, name: "Dry Comfort Diapers (Size 3)", size: null, category: "Baby", price: 160.00, unitPrice: "R2.60 / unit", image: "https://placehold.co/300x300/eef2f6/F7B733?text=Diapers", badge: null },
-    { id: 16, name: "Extension Cord (5m)", size: null, category: "Hardware", price: 79.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/333?text=Cord", badge: null },
-    { id: 17, name: "Stainless Steel Pot (Medium)", size: null, category: "Kitchenware", price: 189.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/555?text=Pot", badge: null },
-    { id: 18, name: "White Bowl", size: null, category: "Kitchenware", price: 49.00, unitPrice: null, image: "images/bowl (1).jpg", badge: null },
-    { id: 19, name: "Carpet (2x3m)", size: null, category: "Household", price: 399.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/CCC?text=Carpet", badge: null },
-    { id: 20, name: "Cookware Set (5 Pieces)", size: null, category: "Kitchenware", price: 599.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/AAA?text=Cookware+Set", badge: { type: "hot", text: "Hot" } },
-    { id: 21, name: "Laundry Detergent (2kg)", size: null, category: "Cleaning", price: 120.00, unitPrice: "R60 / kg", image: "https://placehold.co/300x300/eef2f6/F7B733?text=Laundry+Detergent", badge: null },
-    { id: 22, name: "Iron (Steam)", size: null, category: "Appliances", price: 349.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/333?text=Iron", badge: null },
-    { id: 23, name: "Mop", size: null, category: "Cleaning", price: 75.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/888?text=Mop", badge: null },
-    { id: 24, name: "Pressure Cooker (5L)", size: null, category: "Kitchenware", price: 499.00, unitPrice: null, image: "https://placehold.co/300x300/eef2f6/555?text=Pressure+Cooker", badge: null },
-    { id: 25, name: "Highlighter (Pack of 4)", size: null, category: "Office / B2B", price: 35.00, unitPrice: "R8.75 / unit", image: "https://placehold.co/300x300/eef2f6/FF0?text=Highlighter", badge: null },
-    { id: 26, name: "Glue Stick", size: null, category: "Office / B2B", price: 15.00, unitPrice: "R15.00 / unit", image: "https://placehold.co/300x300/eef2f6/F0F?text=Glue+Stick", badge: null }
+  ...makeNoodleProducts({ startId: 1 }),
 ];
