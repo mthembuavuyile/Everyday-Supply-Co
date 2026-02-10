@@ -16,9 +16,19 @@ const noodleCatalog = [
     price5Pack: 36.99,
   },
   {
+    brand: "Eat me Instant Noodles",
+    flavors: ["Chicken", "Beef", "Cheese"],
+    price5Pack: 24.99,
+  },
+  { 
     brand: "Kellogg’s Instant Noodles",
     flavors: ["Chicken", "Beef", "Cheese", "Durban Curry", "Vegetable Curry", "Hot & Spicy"],
     price5Pack: 34.99,
+  },
+  {
+    brand: "Hommi Flavoured Noodles",
+    flavors: ["Chicken", "Beef", "Cheese"],
+    price5Pack: 28.00
   },
 ];
 
