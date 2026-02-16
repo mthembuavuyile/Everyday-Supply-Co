@@ -20,7 +20,7 @@ export function addToCart(cart, product) {
     } else {
         cart.push({ ...product, qty: 1 });
     }
-    return [...cart]; // Return new reference to trigger updates
+    return [...cart];
 }
 
 export function updateQty(cart, id, delta) {

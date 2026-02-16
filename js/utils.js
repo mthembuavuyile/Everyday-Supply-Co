@@ -8,7 +8,6 @@ export const moneyZA = (amount) => {
     }).format(amount);
 };
 
-// Debounce function to stop search flickering
 export const debounce = (func, wait) => {
     let timeout;
     return function(...args) {
@@ -21,7 +20,6 @@ export const debounce = (func, wait) => {
     };
 };
 
-// Create a data URI from the SVG content provided
 export const svgToUrl = (svgString) => {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
 };
