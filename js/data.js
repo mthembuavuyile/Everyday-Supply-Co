@@ -1,59 +1,103 @@
-import { svgToUrl } from './utils.js';
+// js/data.js
 
 export const WHATSAPP_NUMBER = "27783284393";
 
-const svgs = {
-  noodlesBulk: `<?xml version='1.0' encoding='utf-8'?><svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="100%" height="100%" fill="#eef2f6" /><path fill="#F7B733" d="M74.135 138.98h3.67v22.41h-2.14q-.5 0-.83-.16-.33-.17-.64-.55l-11.71-14.94q.1 1.02.1 1.89v13.76h-3.68v-22.41h2.19q.26 0 .46.02.19.02.34.09t.28.2q.14.14.31.35l11.75 15.01q-.04-.55-.07-1.07-.03-.53-.03-.98zm15.09 6.26q1.77 0 3.22.57 1.45.58 2.48 1.63t1.59 2.57.56 3.4q0 1.89-.56 3.41t-1.59 2.59-2.48 1.64-3.22.57q-1.78 0-3.24-.57-1.45-.57-2.48-1.64-1.04-1.07-1.6-2.59-.57-1.52-.57-3.41 0-1.88.57-3.4.56-1.52 1.6-2.57 1.03-1.05 2.48-1.63 1.46-.57 3.24-.57m0 13.44q1.99 0 2.94-1.34.95-1.33.95-3.9t-.95-3.92-2.94-1.35q-2.01 0-2.98 1.35-.97 1.36-.97 3.92t.97 3.9 2.98 1.34m17.81-13.44q1.77 0 3.22.57 1.45.58 2.48 1.63t1.59 2.57q.55 1.52.55 3.4 0 1.89-.55 3.41-.56 1.52-1.59 2.59t-2.48 1.64-3.22.57q-1.78 0-3.24-.57-1.45-.57-2.49-1.64-1.03-1.07-1.59-2.59-.57-1.52-.57-3.41 0-1.88.57-3.4.56-1.52 1.59-2.57 1.04-1.05 2.49-1.63 1.46-.57 3.24-.57m0 13.44q1.99 0 2.94-1.34.95-1.33.95-3.9t-.95-3.92-2.94-1.35q-2.01 0-2.98 1.35-.97 1.36-.97 3.92t.97 3.9 2.98 1.34m20.76-2v-7.13q-.65-.79-1.42-1.12-.77-.32-1.65-.32-.87 0-1.57.32-.7.33-1.19.99-.5.66-.76 1.67-.26 1.02-.26 2.39 0 1.4.22 2.37t.64 1.58 1.03.88q.6.27 1.34.27 1.2 0 2.04-.49.83-.5 1.58-1.41m0-18.32h3.82v23.03h-2.34q-.76 0-.96-.7l-.32-1.53q-.96 1.1-2.21 1.78t-2.91.68q-1.3 0-2.38-.54-1.09-.54-1.87-1.57t-1.21-2.55-.43-3.48q0-1.76.48-3.28t1.38-2.64q.9-1.11 2.16-1.74 1.25-.63 2.82-.63 1.33 0 2.28.42.94.42 1.69 1.13zm7.65 0h3.83v23.03h-3.83zm10.68 13.25h7.23q0-.74-.21-1.4t-.63-1.16q-.42-.49-1.06-.78-.65-.29-1.5-.29-1.66 0-2.61.95-.95.94-1.22 2.68m9.77 2.31h-9.84q.09 1.22.43 2.11.34.9.9 1.48t1.32.87q.77.28 1.7.28t1.61-.21q.67-.22 1.17-.49.51-.26.89-.48.38-.21.73-.21.48 0 .72.35l1.1 1.4q-.64.74-1.43 1.25-.79.5-1.65.8t-1.75.43q-.89.12-1.73.12-1.66 0-3.08-.55-1.43-.55-2.48-1.63-1.06-1.07-1.66-2.66-.61-1.59-.61-3.68 0-1.63.53-3.06.53-1.44 1.51-2.5t2.4-1.68 3.2-.62q1.51 0 2.78.48t2.18 1.4q.92.92 1.44 2.27.52 1.34.52 3.06 0 .86-.19 1.17-.19.3-.71.3m14.34-6.71-.87 1.38q-.16.25-.33.35t-.43.1q-.28 0-.6-.16-.32-.15-.74-.35-.41-.19-.95-.35-.53-.15-1.26-.15-1.13 0-1.78.48-.64.48-.64 1.25 0 .52.33.87.34.34.89.61.55.26 1.24.47.7.21 1.42.46t1.42.56q.7.32 1.25.81t.88 1.17q.34.68.34 1.64 0 1.15-.41 2.12-.42.97-1.22 1.67-.81.71-1.99 1.1-1.19.4-2.74.4-.82 0-1.6-.15-.79-.15-1.51-.41t-1.33-.62-1.08-.78l.89-1.45q.17-.27.4-.4.23-.14.59-.14.35 0 .67.2t.74.43.98.44q.57.2 1.44.2.68 0 1.17-.17.49-.16.8-.42.32-.27.47-.61.15-.35.15-.73 0-.55-.34-.91-.33-.36-.88-.62t-1.26-.47q-.7-.21-1.44-.46-.73-.25-1.44-.58t-1.26-.85q-.55-.51-.88-1.25-.33-.75-.33-1.8 0-.98.39-1.86.38-.88 1.13-1.54.76-.66 1.88-1.06 1.12-.39 2.6-.39 1.64 0 2.99.54t2.25 1.43m15.36 10.93h4.21q1.16 0 1.95-.28.8-.28 1.27-.75.47-.46.68-1.08t.21-1.32q0-.73-.23-1.31-.24-.58-.73-.99-.5-.41-1.28-.63t-1.88-.22h-4.2zm3.55-15.94h-3.55v6.48h3.31q2.14 0 3.23-.77 1.1-.78 1.1-2.47 0-1.75-.99-2.5-1-.74-3.1-.74m-7.72-3.22h7.72q2.2 0 3.76.42 1.57.41 2.57 1.19 1 .77 1.46 1.87.47 1.11.47 2.48 0 .8-.24 1.52-.23.72-.72 1.34-.48.63-1.24 1.14-.75.51-1.79.87 4.62 1.04 4.62 4.99 0 1.43-.54 2.64t-1.58 2.08q-1.04.88-2.56 1.37-1.52.5-3.47.5h-8.46zm29.68 6.51h3.83v15.9h-2.34q-.76 0-.96-.7l-.27-1.27q-.97.99-2.15 1.61-1.18.61-2.78.61-1.3 0-2.3-.44-1-.45-1.68-1.25-.68-.81-1.03-1.92-.35-1.1-.35-2.44v-10.1h3.83v10.1q0 1.46.67 2.26.68.8 2.03.8.99 0 1.86-.45.86-.44 1.64-1.21zm7.66-7.13h3.82v23.03h-3.82zm7.65 0h3.83v13.19h.71q.39 0 .62-.1.22-.1.45-.41l3.96-4.89q.24-.32.55-.49.3-.17.78-.17h3.5l-4.94 5.9q-.53.7-1.15 1.07.33.23.58.54.26.31.49.67l5.3 7.72h-3.46q-.44 0-.77-.15-.33-.14-.54-.53l-4.06-6.03q-.22-.36-.45-.47-.24-.11-.7-.11h-.87v7.29h-3.83z" /></svg>`,
+// --- Configuration & Assets ---
+
+const FALLBACK_IMAGE = "https://via.placeholder.com/150?text=No+Image";
+
+const BRAND_IMAGES = {
+  "Maggi 2-Minute Noodles": "./images/maggi.png",
+  "Eat me Instant Noodles": "./images/eat-me.jpg",
+  "Kellogg’s Instant Noodles": "./images/kelloggs.png",
+  "Hommi Flavoured Noodles": "./images/hommi.jpg",
 };
 
-const noodleCatalog = [
+/**
+ * Specific product images (brand + flavor overrides)
+ * Use a consistent delimiter.
+ */
+const PRODUCT_IMAGES = {
+  "Hommi Flavoured Noodles|Beef": "./images/hommi-beef.jpg",
+  "Hommi Flavoured Noodles|Chicken": "./images/hommi-chicken.jpg",
+
+  "Eat Me Instant Noodles|Hot Chicken": "./images/eat-me-hot-chicken.jpg",
+
+};
+
+/**
+ * Hardcoded noodle catalog
+ */
+const NOODLE_CATALOG = [
   {
     brand: "Maggi 2-Minute Noodles",
-    flavors: ["Chicken", "Beef", "Durban Curry", "Cheese", "Crispy Chicken", "Boerewors", "Steak & Chops"],
+    flavors: ["Chicken", "Durban Curry", "Cheese"],
     price5Pack: 36.99,
   },
   {
-    brand: "Eat me Instant Noodles",
-    flavors: ["Chicken", "Beef", "Cheese"],
+    brand: "Eat Me Instant Noodles",
+    flavors: ["Hot Chicken", "Beef", "Cheese"],
     price5Pack: 24.99,
   },
-  { 
+  {
     brand: "Kellogg’s Instant Noodles",
-    flavors: ["Chicken", "Beef", "Cheese", "Durban Curry", "Vegetable Curry", "Hot & Spicy"],
+    flavors: ["Chicken", "Beef", "Cheese", "Durban Curry"],
     price5Pack: 34.99,
   },
   {
     brand: "Hommi Flavoured Noodles",
-    flavors: ["Chicken", "Beef", "Cheese"],
-    price5Pack: 28.00
+    flavors: ["Beef", "Chicken"],
+    price5Pack: 28.0,
   },
 ];
 
-function makeNoodleProducts({ startId }) {
-  let id = startId;
-  const results = [];
+// --- Helper Functions ---
 
-  for (const b of noodleCatalog) {
-    const uniqueFlavors = Array.from(new Set(b.flavors.map((f) => f.trim())));
-
-    for (const flavor of uniqueFlavors) {
-      const name = `${b.brand} — ${flavor} (5-Pack)`;
-      
-      results.push({
-        id: (id++).toString(), // Convert to string to match DB IDs usually
-        name,
-        category: "Noodles",
-        price: b.price5Pack,
-        image: svgToUrl(svgs.noodlesBulk),
-        isManual: true, // Flag for Admin Logic
-        createdAt: new Date() // Fallback
-      });
-    }
-  }
-
-  return results;
+/**
+ * Resolves the best available image for a product.
+ * Priority: Specific Flavor > Brand Logo > Fallback Placeholder
+ */
+function getProductImage(brand, flavor) {
+  const flavorKey = `${brand}|${flavor}`;
+  return (
+    PRODUCT_IMAGES[flavorKey] || 
+    BRAND_IMAGES[brand] || 
+    FALLBACK_IMAGE
+  );
 }
 
-export const manualProducts = [
-  ...makeNoodleProducts({ startId: 1000 }), // Start manual IDs high to avoid conflict
-];
+/**
+ * Sanitizes and removes duplicates from an array of strings
+ */
+function sanitizeList(arr) {
+  if (!Array.isArray(arr)) return [];
+  return [...new Set(arr.map((s) => String(s).trim()).filter(Boolean))];
+}
+
+/**
+ * Factory function to generate product objects
+ */
+function generateCatalog({ startId = 1000 } = {}) {
+  let currentId = startId;
+  
+  // Use flatMap for cleaner nested loops
+  return NOODLE_CATALOG.flatMap((entry) => {
+    const flavors = sanitizeList(entry.flavors);
+    
+    return flavors.map((flavor) => ({
+      id: String(currentId++),
+      name: `${entry.brand} — ${flavor} (5-Pack)`,
+      brand: entry.brand,
+      flavor: flavor,
+      category: "Noodles",
+      price: Number(entry.price5Pack) || 0,
+      image: getProductImage(entry.brand, flavor),
+      isManual: true,
+      createdAt: new Date().toISOString(), // ISO string is more robust for JSON/Storage
+    }));
+  });
+}
+
+// --- Exports ---
+
+export const manualProducts = generateCatalog({ startId: 1000 });
