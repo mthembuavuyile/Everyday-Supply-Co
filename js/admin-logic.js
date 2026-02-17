@@ -1,12 +1,23 @@
-import { db } from "./firebase.js";
+// js/admin-logic.js
+import { db, auth } from "./firebase.js";
 import { 
     collection, addDoc, getDocs, query, orderBy, 
     doc, deleteDoc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { 
+    signInWithEmailAndPassword, onAuthStateChanged, signOut 
+} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { moneyZA, byId } from "./utils.js";
 import { manualProducts } from "./data.js";
 
 // DOM Elements
+const loginOverlay = byId('login-overlay');
+const dashboard = byId('dashboard');
+const loginForm = byId('login-form');
+const authError = byId('auth-error');
+const logoutBtn = byId('logout-btn');
+
+// Form Elements
 const form = byId('product-form');
 const status = byId('status');
 const tbody = byId('admin-table-body');
@@ -16,7 +27,50 @@ const idInput = byId('p-id');
 
 let allProducts = [];
 
-// 1. Fetch and Merge Logic
+// --- AUTHENTICATION LOGIC ---
+
+// Listen for auth state changes
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // User is signed in
+        loginOverlay.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        byId('admin-email-display').textContent = `Logged in as: ${user.email}`;
+        renderAdminTable(); // Load data only after login
+    } else {
+        // User is signed out
+        loginOverlay.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+        tbody.innerHTML = ''; // Clear sensitive data
+    }
+});
+
+// Handle Login
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = byId('email').value;
+    const password = byId('password').value;
+    
+    authError.classList.add('hidden');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged will handle the UI switch
+    } catch (error) {
+        console.error(error);
+        authError.textContent = "Invalid Credentials. Access Denied.";
+        authError.classList.remove('hidden');
+    }
+});
+
+// Handle Logout
+logoutBtn.addEventListener('click', () => {
+    signOut(auth);
+});
+
+
+// --- INVENTORY LOGIC ---
+
 async function renderAdminTable() {
     if (!tbody) return;
     tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Loading inventory...</td></tr>`;
@@ -31,16 +85,15 @@ async function renderAdminTable() {
             return {
                 id: doc.id,
                 ...data,
-                // Normalize Image field (DB might use imageUrl, JS uses image)
                 image: data.imageUrl || data.image || 'https://via.placeholder.com/50'
             };
         });
     } catch (e) {
         console.error("Error loading DB:", e);
-        status.textContent = "Error loading database items.";
+        // If this fails, it's likely due to Firestore Rules blocking access (which is good!)
+        status.textContent = "Error loading database items (Permission Denied).";
     }
 
-    // Combine: Manual products first or last? Let's put DB first (newest).
     allProducts = [...dbProducts, ...manualProducts];
     
     tbody.innerHTML = "";
@@ -51,21 +104,17 @@ async function renderAdminTable() {
     }
 
     allProducts.forEach(p => {
-        // Check if manual using the flag we added in data.js
         const isManual = p.isManual === true;
         
         const tr = document.createElement('tr');
         tr.className = "hover:bg-gray-50 border-b border-gray-100 group transition-colors";
         
-        // Conditional Action Buttons
         const actionButtons = !isManual 
             ? `<div class="flex gap-2">
                  <button class="edit-btn text-blue-600 hover:bg-blue-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Edit</button>
                  <button class="delete-btn text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Delete</button>
                </div>`
-            : `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-500">
-                 Read-only
-               </span>`;
+            : `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-500">Hardcoded</span>`;
 
         tr.innerHTML = `
             <td class="p-4">
@@ -73,11 +122,10 @@ async function renderAdminTable() {
                     <img src="${p.image}" class="w-10 h-10 object-contain rounded border bg-white">
                     <div>
                         <div class="font-semibold text-gray-800">${p.name}</div>
-                        ${isManual ? '<span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">Hardcoded</span>' : '<span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">Database</span>'}
+                        <div class="text-xs text-gray-500">${p.category}</div>
                     </div>
                 </div>
             </td>
-            <td class="p-4 text-sm text-gray-600">${p.category}</td>
             <td class="p-4 font-mono text-sm font-medium text-gray-700">${moneyZA(p.price)}</td>
             <td class="p-4">
                 ${actionButtons}
@@ -90,35 +138,31 @@ async function renderAdminTable() {
 }
 
 function attachListeners() {
-    // Delete Logic
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-            if(confirm("Are you sure you want to permanently delete this product?")) {
+            if(confirm("Permanently delete this product?")) {
                 try {
                     await deleteDoc(doc(db, "products", btn.dataset.id));
-                    await renderAdminTable(); // Refresh table
+                    await renderAdminTable();
                     status.textContent = "Product deleted.";
                     setTimeout(() => status.textContent = "", 3000);
                 } catch (err) {
-                    alert("Error deleting: " + err.message);
+                    alert("Permission denied. Check Firestore Rules.");
                 }
             }
         });
     });
 
-    // Edit Logic
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const product = allProducts.find(p => p.id === btn.dataset.id);
             if(product) {
-                // Populate form
                 idInput.value = product.id;
                 byId('p-name').value = product.name;
                 byId('p-price').value = product.price;
                 byId('p-category').value = product.category;
-                byId('p-image-url').value = product.image; // Maps 'image' back to input
+                byId('p-image-url').value = product.image;
                 
-                // Change UI state
                 byId('btn-text').textContent = "Update Product";
                 submitBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
                 submitBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-700');
@@ -130,7 +174,6 @@ function attachListeners() {
     });
 }
 
-// Reset Form Logic
 function resetForm() {
     form.reset();
     idInput.value = "";
@@ -143,7 +186,6 @@ function resetForm() {
 
 cancelBtn.addEventListener('click', resetForm);
 
-// Create / Update Logic
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
@@ -152,12 +194,11 @@ form.addEventListener('submit', async (e) => {
     const id = idInput.value;
     const isUpdate = !!id;
 
-    // Standardize data structure for DB
     const data = {
         name: byId('p-name').value,
         price: parseFloat(byId('p-price').value),
         category: byId('p-category').value,
-        imageUrl: byId('p-image-url').value, // DB expects imageUrl usually, or consistency
+        imageUrl: byId('p-image-url').value,
         updatedAt: new Date()
     };
 
@@ -181,12 +222,9 @@ form.addEventListener('submit', async (e) => {
         
     } catch (err) {
         console.error(err);
-        status.textContent = "Error: " + err.message;
+        status.textContent = "Error: Permission Denied.";
         status.className = "mt-4 text-center text-sm text-red-600 font-bold";
     }
     
     submitBtn.disabled = false;
 });
-
-// Initial Load
-renderAdminTable();
