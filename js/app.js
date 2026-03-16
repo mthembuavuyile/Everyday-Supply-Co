@@ -18,6 +18,8 @@ const cartTotalEl = byId('cart-total');
 const cartCountEl = byId('cart-count');
 const searchInput = byId('search-input');
 const categorySelect = byId('category-filter');
+const navDrawer = byId('nav-drawer');
+const navOverlay = byId('nav-overlay');
 const drawer = byId('cart-drawer');
 const overlay = byId('cart-overlay');
 
@@ -91,10 +93,24 @@ function toggleCart(open) {
   }
 }
 
+// Nav Drawer Logic
+function toggleNav(open) {
+  if (open) {
+    navDrawer.classList.remove('translate-x-full');
+    navOverlay.classList.remove('opacity-0', 'pointer-events-none');
+  } else {
+    navDrawer.classList.add('translate-x-full');
+    navOverlay.classList.add('opacity-0', 'pointer-events-none');
+  }
+}
+
 // Event Listeners
 byId('cart-btn').addEventListener('click', () => toggleCart(true));
 byId('cart-close').addEventListener('click', () => toggleCart(false));
 overlay.addEventListener('click', () => toggleCart(false));
+byId('nav-btn').addEventListener('click', () => toggleNav(true));
+byId('nav-close').addEventListener('click', () => toggleNav(false));
+navOverlay.addEventListener('click', () => toggleNav(false));
 
 searchInput.addEventListener('input', debounce((e) => {
     searchQuery = e.target.value;

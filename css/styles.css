@@ -24,6 +24,8 @@
     background: #94a3b8;
 }
 
+#menu-drawer.is-open { transform: translateX(0); }
+
 /* Animations */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(16px); }

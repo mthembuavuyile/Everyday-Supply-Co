@@ -32,12 +32,18 @@
       <a href="index.html" class="shrink-0 text-xl md:text-2xl font-extrabold tracking-tight text-gray-900">
         Everyday<span class="text-emerald-600">Supply-co</span>.
       </a>
-      <div class="flex items-center gap-4 shrink-0">
+      <div class="flex items-center gap-2 md:gap-4 shrink-0">
         <button id="cart-btn" class="relative group p-2.5 bg-white rounded-full shadow-sm border border-gray-100 hover:border-emerald-200 transition">
           <svg class="w-6 h-6 text-gray-700 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
           </svg>
           <span id="cart-count" class="absolute -top-1 -right-1 bg-emerald-600 text-white text-[10px] font-bold w-5 h-5 rounded-full grid place-items-center scale-0 transition-transform">0</span>
+        </button>
+        
+        <button id="nav-btn" class="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 hover:border-emerald-200 transition">
+          <svg class="w-6 h-6 text-gray-700 hover:text-emerald-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
         </button>
       </div>
     </div>
@@ -131,6 +137,25 @@
     <a href="info.html" class="hover:text-white transition-colors">Privacy Policy</a>
   </div>
 </div>
+
+
+<div id="nav-overlay" class="fixed inset-0 bg-black/30 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm"></div>
+
+  <aside id="nav-drawer" class="fixed top-0 right-0 h-full w-64 md:w-80 bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      <h2 class="text-lg font-bold text-gray-800">Menu</h2>
+      <button id="nav-close" class="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <nav class="p-5 flex flex-col gap-4">
+      <a href="info.html" class="flex items-center gap-3 text-lg font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Information
+      </a>
+      </nav>
+  </aside>
 
   <!-- Cart overlay -->
   <div id="cart-overlay" class="fixed inset-0 bg-black/30 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm"></div>
