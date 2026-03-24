@@ -1,15 +1,16 @@
+// js/app.js
 import { loadCart, saveCart, addToCart, updateQty, getCartTotal, getCartCount } from './cart.js';
 import { renderProducts, renderCartItems, updateCartCount } from './ui.js';
 import { byId, moneyZA, debounce } from './utils.js';
 import { db } from './firebase.js';
 import { collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
-import { manualProducts, WHATSAPP_NUMBER } from './data.js';
+import { WHATSAPP_NUMBER, FALLBACK_IMAGE } from './data.js';
 
 // State
 let cart = loadCart();
 let currentCategory = 'all';
 let searchQuery = '';
-let products = [];
+let products =[];
 
 // Elements
 const gridEl = byId('product-grid');
@@ -23,52 +24,50 @@ const navOverlay = byId('nav-overlay');
 const drawer = byId('cart-drawer');
 const overlay = byId('cart-overlay');
 
-// 1. Fetch & Merge Logic (Same idea as Admin, just different fields needed)
+// 1. Fetch from Firebase strictly (No manual products)
 async function loadLiveProducts() {
-  let dbProducts = [];
   try {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
 
-    dbProducts = snap.docs.map((doc) => {
+    products = snap.docs.map((doc) => {
       const data = doc.data();
       return {
-        ...data,
+        ...data, // Spread remaining fields
         id: doc.id,
-        // Normalize
-        image: data.imageUrl || data.image || 'https://via.placeholder.com/150',
+        // Safety Fallbacks: Prevents app crashes if Firebase data is missing fields
+        name: data.name || 'Unnamed Product',
+        category: data.category || 'Uncategorized',
+        price: typeof data.price === 'number' ? data.price : parseFloat(data.price) || 0,
+        image: data.imageUrl || data.image || FALLBACK_IMAGE,
       };
     });
   } catch (err) {
-    console.error('Firestore failed:', err);
+    console.error('Firestore failed to load products:', err);
+    products =[]; // Fallback to empty array so the app doesn't crash
   }
-
-  // Merge
-  products = [...manualProducts, ...dbProducts];
 }
 
 // UI Refresh
 function refreshUI() {
-  const filtered = products.filter((p) => {
-    const matchesCat = currentCategory === 'all' || p.category === currentCategory;
-    const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
+  const filtered = products.filter((p) => {
+    const matchesCat = currentCategory === 'all' || p.category === currentCategory;
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
 
-  renderProducts(gridEl, filtered, (product) => {
-    cart = addToCart(cart, product);
-    saveCart(cart);
-    refreshCart();
-    
-    // REMOVED: toggleCart(true); 
-    
-    // ADDED: Visual pop animation on the cart icon
-    const cartBtn = byId('cart-btn');
-    cartBtn.classList.add('scale-110', 'border-emerald-500');
-    setTimeout(() => {
-      cartBtn.classList.remove('scale-110', 'border-emerald-500');
-    }, 200);
-  });
+  renderProducts(gridEl, filtered, (product) => {
+    cart = addToCart(cart, product);
+    saveCart(cart);
+    refreshCart();
+    
+    // Visual pop animation on the cart icon
+    const cartBtn = byId('cart-btn');
+    cartBtn.classList.add('scale-110', 'border-emerald-500');
+    setTimeout(() => {
+      cartBtn.classList.remove('scale-110', 'border-emerald-500');
+    }, 200);
+  });
 }
 
 function refreshCart() {
@@ -137,13 +136,16 @@ byId('checkout-btn').addEventListener('click', () => {
 
 // Init
 async function init() {
-  // Show skeleton or loading?
-  gridEl.innerHTML = '<div class="col-span-full text-center text-gray-400">Loading products...</div>';
+  gridEl.innerHTML = `
+    <div class="col-span-full text-center py-10 flex flex-col items-center justify-center gap-3">
+        <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-gray-500 font-medium animate-pulse">Loading live products...</p>
+    </div>`;
   
   await loadLiveProducts();
 
-  // Populate Category Dropdown dynamically
-  const categories = [...new Set(products.map((p) => p.category))].filter(Boolean).sort();
+  // Populate Category Dropdown dynamically based strictly on Firebase data
+  const categories =[...new Set(products.map((p) => p.category))].filter(Boolean).sort();
   categorySelect.innerHTML = `<option value="all">All Categories</option>`;
   categories.forEach((cat) => {
     const opt = document.createElement('option');
