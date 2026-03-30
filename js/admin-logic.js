@@ -8,6 +8,7 @@ import {
     signInWithEmailAndPassword, onAuthStateChanged, signOut 
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { moneyZA, byId } from "./utils.js";
+import { FALLBACK_IMAGE } from "./data.js"; // Added import from data.js
 
 // DOM Elements
 const loginOverlay = byId('login-overlay');
@@ -84,7 +85,8 @@ async function renderAdminTable() {
             return {
                 id: doc.id,
                 ...data,
-                image: data.imageUrl || data.image || 'https://via.placeholder.com/50'
+                // Using FALLBACK_IMAGE imported from data.js
+                image: data.imageUrl || data.image || FALLBACK_IMAGE
             };
         });
     } catch (e) {
@@ -103,18 +105,10 @@ async function renderAdminTable() {
     }
 
     allProducts.forEach(p => {
-        const isManual = p.isManual === true;
-        
         const tr = document.createElement('tr');
         tr.className = "hover:bg-gray-50 border-b border-gray-100 group transition-colors";
         
-        const actionButtons = !isManual 
-            ? `<div class="flex gap-2">
-                 <button class="edit-btn text-blue-600 hover:bg-blue-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Edit</button>
-                 <button class="delete-btn text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Delete</button>
-               </div>`
-            : `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-500">Hardcoded</span>`;
-
+        // Removed `isManual` logic—all items get Edit/Delete buttons now
         tr.innerHTML = `
             <td class="p-4">
                 <div class="flex items-center gap-3">
@@ -127,7 +121,10 @@ async function renderAdminTable() {
             </td>
             <td class="p-4 font-mono text-sm font-medium text-gray-700">${moneyZA(p.price)}</td>
             <td class="p-4">
-                ${actionButtons}
+                <div class="flex gap-2">
+                    <button class="edit-btn text-blue-600 hover:bg-blue-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Edit</button>
+                    <button class="delete-btn text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm font-medium transition" data-id="${p.id}">Delete</button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -160,7 +157,8 @@ function attachListeners() {
                 byId('p-name').value = product.name;
                 byId('p-price').value = product.price;
                 byId('p-category').value = product.category;
-                byId('p-image-url').value = product.image;
+                // Pre-fill image field using the original data prop
+                byId('p-image-url').value = product.imageUrl || product.image || "";
                 
                 byId('btn-text').textContent = "Update Product";
                 submitBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
