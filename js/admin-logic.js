@@ -93,7 +93,7 @@ async function renderAdminTable() {
         status.textContent = "Error loading database items (Permission Denied).";
     }
 
-    allProducts = [...dbProducts, ...manualProducts];
+    allProducts = [...dbProducts];
     
     tbody.innerHTML = "";
     
