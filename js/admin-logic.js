@@ -8,7 +8,6 @@ import {
     signInWithEmailAndPassword, onAuthStateChanged, signOut 
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { moneyZA, byId } from "./utils.js";
-import { manualProducts } from "./data.js";
 
 // DOM Elements
 const loginOverlay = byId('login-overlay');
