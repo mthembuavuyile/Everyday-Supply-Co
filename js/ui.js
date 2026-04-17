@@ -1,5 +1,158 @@
 import { moneyZA } from './utils.js';
 
+// ─── Toast ───────────────────────────────────────────────────────────────────
+let toastTimeout;
+export function showToast(message) {
+    let toast = document.getElementById('cart-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'cart-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.style.cssText = [
+            'position:fixed',
+            'bottom:24px',
+            'left:50%',
+            'transform:translateX(-50%) translateY(80px)',
+            'z-index:9999',
+            'background:#064e3b',
+            'color:#ecfdf5',
+            'padding:14px 22px',
+            'border-radius:16px',
+            'font-family:inherit',
+            'font-weight:700',
+            'font-size:14px',
+            'box-shadow:0 8px 32px rgba(0,0,0,0.22)',
+            'display:flex',
+            'align-items:center',
+            'gap:10px',
+            'transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1),opacity 0.32s ease',
+            'opacity:0',
+            'pointer-events:none',
+            'white-space:nowrap',
+        ].join(';');
+        toast.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span id="cart-toast-msg"></span>`;
+        document.body.appendChild(toast);
+    }
+    document.getElementById('cart-toast-msg').textContent = message;
+    clearTimeout(toastTimeout);
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    // Animate out after 2.4s
+    toastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(80px)';
+    }, 2400);
+}
+
+// ─── Quick-view modal ─────────────────────────────────────────────────────────
+export function openQuickView(product, onAdd) {
+    // Remove stale modal if any
+    const old = document.getElementById('quick-view-modal');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'quick-view-modal';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', product.name);
+    overlay.style.cssText = [
+        'position:fixed',
+        'inset:0',
+        'z-index:8000',
+        'display:flex',
+        'align-items:flex-end',
+        'justify-content:center',
+        'background:rgba(0,0,0,0)',
+        'transition:background 0.28s ease',
+        'padding:0',
+    ].join(';');
+
+    const isBulk = product.name.toLowerCase().includes('bulk') ||
+                   product.name.toLowerCase().includes('box')  ||
+                   product.name.toLowerCase().includes('pack');
+    const badge = isBulk
+        ? `<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:8px">Bulk Saver</span>`
+        : '';
+
+    overlay.innerHTML = `
+        <div id="quick-view-sheet"
+             style="width:100%;max-width:480px;background:#fff;border-radius:28px 28px 0 0;
+                    padding:0 0 env(safe-area-inset-bottom,0);
+                    box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+                    transform:translateY(100%);
+                    transition:transform 0.35s cubic-bezier(0.34,1.3,0.64,1);
+                    font-family:inherit;overflow:hidden">
+            <!-- Drag handle -->
+            <div style="display:flex;justify-content:center;padding:12px 0 0">
+                <div style="width:40px;height:4px;border-radius:99px;background:#e5e7eb"></div>
+            </div>
+            <!-- Image -->
+            <div style="background:#f9fafb;margin:12px 20px 0;border-radius:20px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+                ${isBulk ? `<div style="position:absolute;top:12px;left:12px">${badge}</div>` : ''}
+                <img src="${product.image}" alt="${product.name}" style="width:75%;height:75%;object-fit:contain" />
+            </div>
+            <!-- Info -->
+            <div style="padding:20px 20px 0">
+                <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin:0 0 6px">${product.category}</p>
+                <h2 style="font-size:18px;font-weight:800;color:#111827;line-height:1.3;margin:0 0 10px">${product.name}</h2>
+                <p style="font-size:24px;font-weight:900;color:#111827;margin:0">${moneyZA(product.price)}</p>
+            </div>
+            <!-- CTA -->
+            <div style="padding:20px">
+                <button id="quick-view-add-btn"
+                    style="width:100%;background:#059669;color:#fff;border:none;border-radius:16px;
+                           padding:16px;font-size:16px;font-weight:800;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;gap:10px;
+                           box-shadow:0 6px 20px rgba(5,150,105,0.3);transition:background .2s,transform .15s"
+                    aria-label="Add ${product.name} to basket">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+                    Add To Cart
+                </button>
+                <button id="quick-view-close-btn"
+                    style="width:100%;background:transparent;border:none;color:#6b7280;padding:12px;
+                           font-size:14px;font-weight:700;cursor:pointer;margin-top:4px">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    // Animate in
+    requestAnimationFrame(() => {
+        overlay.style.background = 'rgba(0,0,0,0.45)';
+        document.getElementById('quick-view-sheet').style.transform = 'translateY(0)';
+    });
+
+    function close() {
+        overlay.style.background = 'rgba(0,0,0,0)';
+        document.getElementById('quick-view-sheet').style.transform = 'translateY(100%)';
+        document.body.style.overflow = '';
+        setTimeout(() => overlay.remove(), 350);
+    }
+
+    // Close on overlay click (outside the sheet)
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.getElementById('quick-view-close-btn').addEventListener('click', close);
+
+    document.getElementById('quick-view-add-btn').addEventListener('click', () => {
+        onAdd(product);
+        // Brief button feedback then close
+        const btn = document.getElementById('quick-view-add-btn');
+        if (btn) {
+            btn.style.background = '#065f46';
+            btn.style.transform = 'scale(0.97)';
+        }
+        setTimeout(close, 260);
+    });
+}
+
 export function renderSkeletons(gridEl, count = 10) {
     gridEl.innerHTML = '';
     for (let i = 0; i < count; i++) {
@@ -78,9 +231,13 @@ export function renderProducts(gridEl, products, onAdd) {
             e.stopPropagation();
             onAdd(p);
         });
-        
-        // Make the whole card click trigger add to cart for better mobile tap target
-        card.addEventListener('click', () => onAdd(p));
+
+        // Tapping the card body (not the button) opens the quick-view modal
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('.add-btn')) {
+                openQuickView(p, onAdd);
+            }
+        });
 
         gridEl.appendChild(card);
     });

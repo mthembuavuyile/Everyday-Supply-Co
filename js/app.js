@@ -1,6 +1,6 @@
 // js/app.js
 import { loadCart, saveCart, addToCart, updateQty, getCartTotal, getCartCount } from './cart.js';
-import { renderProducts, renderCartItems, updateCartCount } from './ui.js';
+import { renderProducts, renderCartItems, updateCartCount, showToast } from './ui.js';
 import { byId, moneyZA, debounce } from './utils.js';
 import { db } from './firebase.js';
 import { collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
@@ -111,7 +111,10 @@ function refreshUI() {
     cart = addToCart(cart, product);
     saveCart(cart);
     refreshCart();
-    
+
+    // Bottom toast — always visible regardless of header scroll state
+    showToast(`✓ ${product.name} added to basket`);
+
     // Visual pop animation on the cart icon
     const cartBtn = byId('cart-btn');
     cartBtn.classList.add('scale-110', 'border-emerald-500');
