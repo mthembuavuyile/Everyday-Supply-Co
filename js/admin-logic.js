@@ -18,6 +18,40 @@ const authError = byId('auth-error');
 const logoutBtn = byId('logout-btn');
 const adminEmailDisplay = byId('admin-email-display');
 const settingsEmail = byId('settings-email');
+const toastContainer = byId('toast-container');
+
+// Toast Notification System
+function showToast(message, type = 'success') {
+    if (!toastContainer) return;
+    
+    const toast = document.createElement('div');
+    const isError = type === 'error';
+    const bgClass = isError ? 'bg-red-600' : 'bg-gray-900';
+    const icon = isError ? 'alert-circle' : 'check-circle-2';
+    
+    toast.className = `${bgClass} text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+    
+    toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-5 h-5 text-white/90"></i>
+        <span>${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+    });
+    
+    // Animate out
+    setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-[-100%]', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 // View Containers
 const inventoryView = byId('inventory-view');
@@ -239,7 +273,7 @@ function displayProducts() {
         div.className = "bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex gap-4 items-center group active:scale-[0.98] transition-all";
         
         div.innerHTML = `
-            <div class="w-20 h-20 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden border border-gray-100">
+            <div class="w-20 h-20 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden border border-gray-100/60 p-1 flex items-center justify-center">
                 <img src="${p.image}" class="w-full h-full object-contain" onerror="this.src='${FALLBACK_IMAGE}'">
             </div>
             <div class="flex-1 min-w-0">
@@ -270,9 +304,10 @@ function attachItemListeners() {
             if(confirm("Permanently delete this product?")) {
                 try {
                     await deleteDoc(doc(db, "products", btn.dataset.id));
+                    showToast("Product deleted successfully");
                     await renderInventory();
                 } catch (err) {
-                    alert("Permission denied.");
+                    showToast("Permission denied.", "error");
                 }
             }
         });
@@ -322,8 +357,10 @@ if (form) {
         try {
             if (isUpdate) {
                 await updateDoc(doc(db, "products", id), data);
+                showToast("Product updated successfully");
             } else {
                 await addDoc(collection(db, "products"), data);
+                showToast("Product added successfully");
             }
             
             closeModal();
@@ -331,12 +368,13 @@ if (form) {
             
         } catch (err) {
             console.error(err);
-            if (status) {
-                status.textContent = "Error: Permission Denied.";
-                status.className = "mt-4 text-center text-sm text-red-600 font-bold h-6";
-            }
+            showToast("Error: Permission Denied.", "error");
         }
         
         if (submitBtn) submitBtn.disabled = false;
+        if (status) {
+            status.textContent = "";
+            status.className = "";
+        }
     });
 }

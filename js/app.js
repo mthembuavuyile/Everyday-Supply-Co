@@ -18,11 +18,49 @@ const cartItemsEl = byId('cart-items');
 const cartTotalEl = byId('cart-total');
 const cartCountEl = byId('cart-count');
 const searchInput = byId('search-input');
-const categorySelect = byId('category-filter');
+const categorySelectEl = byId('category-select');
+const currentCatTitle = byId('current-category-title');
+const productCountEl = byId('product-count');
 const navDrawer = byId('nav-drawer');
 const navOverlay = byId('nav-overlay');
 const drawer = byId('cart-drawer');
 const overlay = byId('cart-overlay');
+
+// Inject JSON-LD Schema for SEO
+function injectSEOSchema(products) {
+  let existingScript = document.getElementById('dynamic-seo-schema');
+  if (existingScript) existingScript.remove();
+
+  const script = document.createElement('script');
+  script.id = 'dynamic-seo-schema';
+  script.type = 'application/ld+json';
+  
+  const itemListElements = products.map((p, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "item": {
+      "@type": "Product",
+      "name": p.name,
+      "image": p.image || p.imageUrl,
+      "category": p.category,
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "ZAR",
+        "price": p.price,
+        "availability": "https://schema.org/InStock"
+      }
+    }
+  }));
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": itemListElements
+  };
+
+  script.text = JSON.stringify(schema);
+  document.head.appendChild(script);
+}
 
 // 1. Fetch from Firebase strictly (No manual products)
 async function loadLiveProducts() {
@@ -55,6 +93,19 @@ function refreshUI() {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
+
+  // Update headers
+  if (currentCatTitle) {
+      currentCatTitle.textContent = currentCategory === 'all' ? (searchQuery ? 'Search Results' : 'All Products') : currentCategory;
+  }
+  if (productCountEl) {
+      productCountEl.textContent = `${filtered.length} items`;
+  }
+
+  // Update dropdown value
+  if (categorySelectEl) {
+    categorySelectEl.value = currentCategory;
+  }
 
   renderProducts(gridEl, filtered, (product) => {
     cart = addToCart(cart, product);
@@ -116,10 +167,12 @@ searchInput.addEventListener('input', debounce((e) => {
     refreshUI();
 }, 300));
 
-categorySelect.addEventListener('change', (e) => {
-  currentCategory = e.target.value;
-  refreshUI();
-});
+if (categorySelectEl) {
+    categorySelectEl.addEventListener('change', (e) => {
+        currentCategory = e.target.value;
+        refreshUI();
+    });
+}
 
 byId('checkout-btn').addEventListener('click', () => {
   if (cart.length === 0) return;
@@ -136,26 +189,70 @@ byId('checkout-btn').addEventListener('click', () => {
 
 // Init
 async function init() {
-  gridEl.innerHTML = `
-    <div class="col-span-full text-center py-10 flex flex-col items-center justify-center gap-3">
-        <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-gray-500 font-medium animate-pulse">Loading live products...</p>
-    </div>`;
+  import('./ui.js').then(module => {
+     if(module.renderSkeletons && gridEl) module.renderSkeletons(gridEl, 10);
+  });
   
   await loadLiveProducts();
 
-  // Populate Category Dropdown dynamically based strictly on Firebase data
-  const categories =[...new Set(products.map((p) => p.category))].filter(Boolean).sort();
-  categorySelect.innerHTML = `<option value="all">All Categories</option>`;
-  categories.forEach((cat) => {
-    const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    categorySelect.appendChild(opt);
-  });
+  // Populate Category Pills dynamically based strictly on Firebase data
+  const categories = ['all', ...new Set(products.map((p) => p.category))].filter(Boolean);
+  
+  if (categorySelectEl) {
+    // Keep 'all' option, clear others
+    categorySelectEl.innerHTML = '<option value="all">All Categories</option>';
+    categories.forEach((cat) => {
+      if (cat === 'all') return;
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      categorySelectEl.appendChild(opt);
+    });
+  }
+
+  // Inject schema once products are loaded
+  if (products.length > 0) {
+      injectSEOSchema(products);
+  }
 
   refreshUI();
   refreshCart();
 }
+
+// Header Reveal/Hide on Scroll
+let lastScrollY = window.scrollY;
+const announcementBar = document.getElementById('announcement-bar');
+const headerContainer = document.getElementById('main-header');
+const stickyFilterBar = document.querySelector('.sticky');
+
+// Heights: announcement bar ~28px mobile / 32px desktop, header 76px / 84px
+// Total combined stack = 104px mobile / 116px desktop
+// We translate each element up by its own height so they both fully clear the viewport.
+// The header sits below the announcement bar, so its own -translate-y-full (76px/84px)
+// is enough since the announcement bar moves independently.
+
+window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+    const isScrollingDown = currentScrollY > lastScrollY && currentScrollY > 80;
+
+    if (isScrollingDown) {
+        // Slide both fully off the top
+        if (announcementBar) announcementBar.style.transform = 'translateY(-100%)';
+        if (headerContainer) {
+            // Header is positioned below the bar; translate it up by bar+own height
+            const barH = announcementBar ? announcementBar.offsetHeight : 28;
+            headerContainer.style.transform = `translateY(calc(-100% - ${barH}px))`;
+        }
+        if (stickyFilterBar) stickyFilterBar.style.top = '0px';
+    } else {
+        // Restore both
+        if (announcementBar) announcementBar.style.transform = '';
+        if (headerContainer) headerContainer.style.transform = '';
+        if (stickyFilterBar) {
+            stickyFilterBar.style.top = window.innerWidth < 768 ? '104px' : '116px';
+        }
+    }
+    lastScrollY = currentScrollY;
+}, { passive: true });
 
 init();
