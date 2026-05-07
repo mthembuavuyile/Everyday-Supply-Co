@@ -180,12 +180,20 @@ if (categorySelectEl) {
 byId('checkout-btn').addEventListener('click', () => {
   if (cart.length === 0) return;
 
+  const nameInput = byId('customer-name').value.trim();
+  const addressInput = byId('delivery-address').value.trim();
+
+  if (!nameInput || !addressInput) {
+    showToast('Please enter your name and delivery address');
+    return;
+  }
+
   const lines = cart
     .map((i) => `• ${i.qty}x ${i.name} (${moneyZA(i.price * i.qty)})`)
     .join('\n');
 
   const total = moneyZA(getCartTotal(cart));
-  const msg = `*New Order Request*\n\n${lines}\n\n*Total: ${total}*`;
+  const msg = `*New Order Request*\n\n*Customer Details:*\nName: ${nameInput}\nAddress: ${addressInput}\n\n*Order Items:*\n${lines}\n\n*Total: ${total}*`;
 
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 });
