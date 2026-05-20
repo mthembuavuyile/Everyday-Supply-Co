@@ -197,29 +197,39 @@
   <!-- Filter bar & Categories -->
   <div
     class="sticky top-[104px] md:top-[116px] z-30 bg-gray-50/95 backdrop-blur-md py-3 px-4 border-b border-gray-200/60 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] transition-all">
-    <div class="max-w-7xl mx-auto flex items-center gap-2">
-      <!-- Search Input Container -->
-      <div class="relative flex-1">
-        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" fill="none"
-          stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-        <input type="text" id="search-input" placeholder="Search..."
-          class="w-full pl-9 pr-3 py-3 rounded-xl border-none bg-white shadow-sm ring-1 ring-gray-200/80 focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-base font-semibold text-gray-800 placeholder-gray-400 transition-shadow">
+    <div class="max-w-7xl mx-auto space-y-2.5">
+      <!-- Search & Sort Row -->
+      <div class="flex items-center gap-2">
+        <!-- Search Input Container -->
+        <div class="relative flex-1">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search essentials..."
+            class="w-full pl-9 pr-3 py-2.5 md:py-3 rounded-xl border-none bg-white shadow-sm ring-1 ring-gray-200/80 focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm font-semibold text-gray-800 placeholder-gray-400 transition-shadow">
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div class="relative w-36 md:w-52 shrink-0">
+          <select id="sort-select"
+            class="w-full pl-3 pr-8 py-2.5 md:py-3 rounded-xl border-none bg-white shadow-sm ring-1 ring-gray-200/80 focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm font-semibold text-gray-800 appearance-none cursor-pointer transition-shadow">
+            <option value="default">Sort: Default</option>
+            <option value="price-low">Price: Low → High</option>
+            <option value="price-high">Price: High → Low</option>
+            <option value="name-asc">Name: A → Z</option>
+          </select>
+          <svg class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
       </div>
 
-      <!-- Category Dropdown -->
-      <div class="relative w-32 md:w-64">
-        <select id="category-select"
-          class="w-full pl-3 pr-8 py-3 rounded-xl border-none bg-white shadow-sm ring-1 ring-gray-200/80 focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-base font-semibold text-gray-800 appearance-none cursor-pointer transition-shadow">
-          <option value="all">All</option>
-          <!-- Options injected via JS -->
-        </select>
-        <svg class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" fill="none"
-          stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
+      <!-- Category Pills Container -->
+      <div id="category-pills" class="flex gap-2 overflow-x-auto hide-scrollbar py-1">
+        <!-- Category buttons injected dynamically via JS -->
       </div>
     </div>
   </div>

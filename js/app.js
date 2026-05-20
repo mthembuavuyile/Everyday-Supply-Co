@@ -10,7 +10,8 @@ import { WHATSAPP_NUMBER, FALLBACK_IMAGE } from './data.js';
 let cart = loadCart();
 let currentCategory = 'all';
 let searchQuery = '';
-let products =[];
+let currentSort = 'default';
+let products = [];
 
 // Elements
 const gridEl = byId('product-grid');
@@ -18,7 +19,8 @@ const cartItemsEl = byId('cart-items');
 const cartTotalEl = byId('cart-total');
 const cartCountEl = byId('cart-count');
 const searchInput = byId('search-input');
-const categorySelectEl = byId('category-select');
+const sortSelectEl = byId('sort-select');
+const categoryPillsEl = byId('category-pills');
 const currentCatTitle = byId('current-category-title');
 const productCountEl = byId('product-count');
 const navDrawer = byId('nav-drawer');
@@ -86,6 +88,29 @@ async function loadLiveProducts() {
   }
 }
 
+// Dynamic Category Pills rendering
+function renderCategoryPills() {
+  if (!categoryPillsEl) return;
+  const categories = ['all', ...new Set(products.map((p) => p.category))].filter(Boolean);
+  
+  categoryPillsEl.innerHTML = categories.map((cat) => {
+    const isActive = currentCategory === cat;
+    const label = cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1);
+    return `
+      <button 
+        data-category="${cat}"
+        class="category-pill shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 whitespace-nowrap ${
+          isActive 
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10' 
+            : 'bg-white text-gray-600 ring-1 ring-gray-200/60 hover:bg-gray-50'
+        }"
+      >
+        ${label}
+      </button>
+    `;
+  }).join('');
+}
+
 // UI Refresh
 function refreshUI() {
   const filtered = products.filter((p) => {
@@ -94,18 +119,27 @@ function refreshUI() {
     return matchesCat && matchesSearch;
   });
 
+  // Sort Pipeline
+  if (currentSort === 'price-low') {
+    filtered.sort((a, b) => a.price - b.price);
+  } else if (currentSort === 'price-high') {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (currentSort === 'name-asc') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   // Update headers
   if (currentCatTitle) {
-      currentCatTitle.textContent = currentCategory === 'all' ? (searchQuery ? 'Search Results' : 'All Products') : currentCategory;
+      currentCatTitle.textContent = currentCategory === 'all' 
+        ? (searchQuery ? 'Search Results' : 'All Products') 
+        : currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
   }
   if (productCountEl) {
       productCountEl.textContent = `${filtered.length} items`;
   }
 
-  // Update dropdown value
-  if (categorySelectEl) {
-    categorySelectEl.value = currentCategory;
-  }
+  // Sync category pills selection
+  renderCategoryPills();
 
   renderProducts(gridEl, filtered, (product) => {
     cart = addToCart(cart, product);
@@ -170,11 +204,20 @@ searchInput.addEventListener('input', debounce((e) => {
     refreshUI();
 }, 300));
 
-if (categorySelectEl) {
-    categorySelectEl.addEventListener('change', (e) => {
-        currentCategory = e.target.value;
-        refreshUI();
-    });
+if (sortSelectEl) {
+  sortSelectEl.addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    refreshUI();
+  });
+}
+
+if (categoryPillsEl) {
+  categoryPillsEl.addEventListener('click', (e) => {
+    const pill = e.target.closest('.category-pill');
+    if (!pill) return;
+    currentCategory = pill.dataset.category;
+    refreshUI();
+  });
 }
 
 byId('checkout-btn').addEventListener('click', () => {
@@ -205,21 +248,6 @@ async function init() {
   });
   
   await loadLiveProducts();
-
-  // Populate Category Pills dynamically based strictly on Firebase data
-  const categories = ['all', ...new Set(products.map((p) => p.category))].filter(Boolean);
-  
-  if (categorySelectEl) {
-    // Keep 'all' option, clear others
-    categorySelectEl.innerHTML = '<option value="all">All Categories</option>';
-    categories.forEach((cat) => {
-      if (cat === 'all') return;
-      const opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      categorySelectEl.appendChild(opt);
-    });
-  }
 
   // Inject schema once products are loaded
   if (products.length > 0) {
