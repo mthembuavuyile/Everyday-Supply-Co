@@ -254,6 +254,16 @@ async function init() {
       injectSEOSchema(products);
   }
 
+  // Read URL search params
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('search')) {
+    searchQuery = urlParams.get('search') || '';
+    if (searchInput) searchInput.value = searchQuery;
+  }
+  if (urlParams.has('category')) {
+    currentCategory = urlParams.get('category') || 'all';
+  }
+
   refreshUI();
   refreshCart();
 }

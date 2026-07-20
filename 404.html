@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en-ZA" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 - Page Not Found | Everyday Supply Co</title>
+  <meta name="description"
+    content="The page you are looking for could not be found. Explore Everyday Supply Co for bulk pantry staples, snacks, and household essentials.">
+
+  <!-- Open Graph / Social SEO -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://everydaysupplies.co.za/404.html">
+  <meta property="og:title" content="404 Page Not Found | Everyday Supply Co">
+  <meta property="og:description" content="The requested page could not be found. Return to Everyday Supply Co to shop bulk pantry staples.">
+  <meta property="og:image" content="https://everydaysupplies.co.za/images/logo-transparent-narrow-wide.png">
+
+  <!-- Twitter Meta -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="404 Page Not Found | Everyday Supply Co">
+  <meta name="twitter:description" content="Quality household essentials at bulk prices.">
+
+  <link rel="canonical" href="https://everydaysupplies.co.za/404.html" />
+
+  <!-- Icons -->
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="96x96" href="images/favicon-96x96.png">
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+  <link rel="shortcut icon" href="images/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Everyday Supply Co">
+  <link rel="manifest" href="images/site.webmanifest">
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(2deg); }
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.08); }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 antialiased pt-[104px] md:pt-[116px] min-h-screen flex flex-col justify-between">
+
+  <!-- Top Announcement Bar -->
+  <div id="announcement-bar"
+    class="fixed top-0 left-0 w-full z-50 bg-emerald-950 text-emerald-50 text-[10px] md:text-xs font-bold py-1.5 md:py-2 px-4 text-center tracking-wide transition-transform duration-300">
+    🚚 Fast Local Delivery in Johannesburg & Surrounds | 100% Quality Guaranteed
+  </div>
+
+  <!-- Header -->
+  <header id="main-header"
+    class="fixed top-[28px] md:top-[32px] left-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm h-[76px] md:h-[84px] transition-transform duration-300">
+    <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between gap-3">
+      <a href="index.html" class="shrink-0 flex items-center">
+        <img src="images/logo-transparent-narrow-wide.png" alt="Everyday Supply Co"
+          class="h-10 md:h-12 w-auto object-contain" />
+      </a>
+      <div class="flex items-center gap-3 md:gap-4 shrink-0">
+        <a href="index.html"
+          class="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-2 rounded-xl transition-all shadow-sm active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          <span class="hidden sm:inline">Back to Shop</span>
+          <span class="sm:hidden">Shop</span>
+        </a>
+
+        <button id="nav-btn"
+          aria-label="Open Menu"
+          class="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 hover:border-emerald-200 transition">
+          <svg class="w-6 h-6 text-gray-700 hover:text-emerald-600 transition" fill="none" stroke="currentColor"
+            stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div id="nav-overlay"
+    class="fixed inset-0 bg-black/30 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm">
+  </div>
+
+  <aside id="nav-drawer"
+    class="fixed top-0 right-0 h-full w-64 md:w-80 bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      <h2 class="text-lg font-bold text-gray-800">Menu</h2>
+      <button id="nav-close" aria-label="Close Menu" class="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="p-5 flex flex-col gap-4">
+      <a href="index.html"
+        class="flex items-center gap-3 text-lg font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        Shop Products
+      </a>
+      <a href="info.html"
+        class="flex items-center gap-3 text-lg font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Information & About
+      </a>
+      <a href="info.html#contact"
+        class="flex items-center gap-3 text-lg font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        Contact Us
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1">
+
+    <!-- 404 Hero Header Section -->
+    <section class="relative py-12 md:py-20 px-4 bg-emerald-950 text-white overflow-hidden">
+      <!-- Ambient Background Glows -->
+      <div class="absolute inset-0 opacity-15">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.5)_0,transparent_70%)]"></div>
+      </div>
+      <div
+        class="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse-glow">
+      </div>
+      <div
+        class="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-700/30 rounded-full blur-3xl animate-pulse-glow" style="animation-delay: 1.5s;">
+      </div>
+
+      <div class="relative z-10 max-w-4xl mx-auto text-center space-y-6">
+        
+        <!-- Animated Visual Icon Badge -->
+        <div class="inline-flex items-center justify-center relative">
+          <div class="w-28 h-28 md:w-36 md:h-36 rounded-3xl bg-emerald-900/80 border border-emerald-700/50 shadow-2xl backdrop-blur-md flex items-center justify-center animate-float">
+            <!-- Grocery Cart with Missing Item Icon -->
+            <svg class="w-14 h-14 md:w-20 md:h-20 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+              </path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v3m0 2h.01" class="text-amber-400 stroke-amber-400"></path>
+            </svg>
+          </div>
+          <span class="absolute -top-3 -right-3 px-3 py-1 bg-amber-500 text-amber-950 font-extrabold text-xs md:text-sm rounded-full shadow-lg">
+            404 Error
+          </span>
+        </div>
+
+        <div class="space-y-3">
+          <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+            Aisle 404: <br class="sm:hidden" />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-200 to-amber-200">
+              Page Not Found
+            </span>
+          </h1>
+          <p class="text-emerald-100/90 text-sm md:text-lg max-w-xl mx-auto font-medium leading-relaxed">
+            Oops! It looks like the pantry item or page you're searching for has been moved, renamed, or doesn't exist anymore.
+          </p>
+        </div>
+
+        <!-- Live Search Bar on 404 -->
+        <div class="pt-4 max-w-md mx-auto">
+          <form id="search-form" class="relative flex items-center">
+            <input type="text" id="404-search-input" placeholder="Search noodles, beans, snacks, tissue..."
+              class="w-full pl-4 pr-28 py-3.5 rounded-2xl bg-white/10 text-white placeholder-emerald-200/70 border border-emerald-700/60 focus:bg-white focus:text-gray-900 focus:placeholder-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 outline-none text-sm transition-all duration-200 shadow-inner"
+              aria-label="Search products" />
+            <button type="submit"
+              class="absolute right-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-xs md:text-sm rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              Search
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Quick Navigation & Popular Categories -->
+    <section class="max-w-5xl mx-auto px-4 py-12 md:py-16 space-y-10">
+
+      <!-- Action Buttons Row -->
+      <div class="flex flex-wrap items-center justify-center gap-4 text-center">
+        <a href="index.html"
+          class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95 gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Return to Shop Homepage
+        </a>
+        <a href="info.html#contact"
+          class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-white text-gray-700 hover:text-emerald-700 font-extrabold text-sm border border-gray-200 hover:border-emerald-300 shadow-sm transition-all active:scale-95 gap-2">
+          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+          </svg>
+          Contact Customer Support
+        </a>
+      </div>
+
+      <!-- Categories & Popular Shortcuts -->
+      <div class="space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">Explore Popular Pantry Categories</h2>
+          <p class="text-sm text-gray-500">Jump directly to what you might be looking for</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <!-- Category Card 1 -->
+          <a href="index.html?category=noodles"
+            class="group p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center text-2xl">
+              🍜
+            </div>
+            <span class="text-sm font-bold text-gray-800 group-hover:text-emerald-700 transition-colors">Instant Noodles</span>
+          </a>
+
+          <!-- Category Card 2 -->
+          <a href="index.html?category=canned"
+            class="group p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors flex items-center justify-center text-2xl">
+              🥫
+            </div>
+            <span class="text-sm font-bold text-gray-800 group-hover:text-emerald-700 transition-colors">Canned Foods</span>
+          </a>
+
+          <!-- Category Card 3 -->
+          <a href="index.html?category=snacks"
+            class="group p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors flex items-center justify-center text-2xl">
+              🍪
+            </div>
+            <span class="text-sm font-bold text-gray-800 group-hover:text-emerald-700 transition-colors">Snacks & Biscuits</span>
+          </a>
+
+          <!-- Category Card 4 -->
+          <a href="info.html"
+            class="group p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-center flex flex-col items-center justify-center space-y-3 col-span-2 sm:col-span-1">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center text-2xl">
+              ℹ️
+            </div>
+            <span class="text-sm font-bold text-gray-800 group-hover:text-emerald-700 transition-colors">Store & Delivery Info</span>
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-300 py-12 border-t border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div>
+        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+          Everyday<span class="text-emerald-500">Supply-co</span>.
+        </h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Quality everyday household essentials and pantry staples at bulk prices. Serving Johannesburg & Durban.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-3">Quick Links</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="index.html" class="hover:text-emerald-400 transition-colors">Shop All Products</a></li>
+          <li><a href="info.html#about" class="hover:text-emerald-400 transition-colors">About Us</a></li>
+          <li><a href="info.html#contact" class="hover:text-emerald-400 transition-colors">Contact Support</a></li>
+          <li><a href="info.html#terms" class="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+          <li><a href="info.html#privacy" class="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-3">Delivery Areas</h4>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Free delivery in Johannesburg & Durban. Fast, reliable local order fulfillment.
+        </p>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-800 text-sm text-gray-500 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left">
+        <p>&copy; 2026 Everyday Supply Co. All rights reserved.</p>
+        <span class="hidden md:inline text-gray-700">|</span>
+        <p>Built by <a href="https://vylex.co.za" target="_blank" rel="noopener"
+            class="text-emerald-500 hover:text-emerald-400 font-medium transition-colors">Vylex</a></p>
+      </div>
+
+      <div class="flex gap-4">
+        <a href="info.html#terms" class="hover:text-white transition-colors">Terms of Service</a>
+        <a href="info.html#privacy" class="hover:text-white transition-colors">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script for 404 Interactivity & Header Scroll -->
+  <script>
+    // Header Reveal / Hide on Scroll
+    let lastScrollY = window.scrollY;
+    const announcementBar = document.getElementById('announcement-bar');
+    const headerContainer = document.getElementById('main-header');
+
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingDown = currentScrollY > lastScrollY && currentScrollY > 80;
+
+      if (isScrollingDown) {
+        if (announcementBar) announcementBar.style.transform = 'translateY(-100%)';
+        if (headerContainer) {
+          const barH = announcementBar ? announcementBar.offsetHeight : 28;
+          headerContainer.style.transform = `translateY(calc(-100% - ${barH}px))`;
+        }
+      } else {
+        if (announcementBar) announcementBar.style.transform = '';
+        if (headerContainer) headerContainer.style.transform = '';
+      }
+      lastScrollY = currentScrollY;
+    }, { passive: true });
+
+    // Mobile Navigation Drawer Toggle
+    const navBtn = document.getElementById('nav-btn');
+    const navClose = document.getElementById('nav-close');
+    const navOverlay = document.getElementById('nav-overlay');
+    const navDrawer = document.getElementById('nav-drawer');
+
+    function toggleNav(open) {
+      if (open) {
+        navDrawer.classList.remove('translate-x-full');
+        navOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      } else {
+        navDrawer.classList.add('translate-x-full');
+        navOverlay.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    if (navBtn) navBtn.addEventListener('click', () => toggleNav(true));
+    if (navClose) navClose.addEventListener('click', () => toggleNav(false));
+    if (navOverlay) navOverlay.addEventListener('click', () => toggleNav(false));
+
+    // Search Redirect
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('404-search-input');
+
+    if (searchForm && searchInput) {
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (query) {
+          window.location.href = `index.html?search=${encodeURIComponent(query)}#product-grid`;
+        } else {
+          window.location.href = `index.html#product-grid`;
+        }
+      });
+    }
+  </script>
+
+</body>
+
+</html>
