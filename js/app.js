@@ -3,7 +3,7 @@ import { loadCart, saveCart, addToCart, updateQty, getCartTotal, getCartCount } 
 import { renderProducts, renderCartItems, updateCartCount, showToast } from './ui.js';
 import { byId, moneyZA, debounce } from './utils.js';
 import { db } from './firebase.js';
-import { collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
+import { collection, getDocs, query, orderBy, doc, setDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
 import { WHATSAPP_NUMBER, FALLBACK_IMAGE } from './data.js';
 
 // State
@@ -84,7 +84,7 @@ async function loadLiveProducts() {
     });
   } catch (err) {
     console.error('Firestore failed to load products:', err);
-    products =[]; // Fallback to empty array so the app doesn't crash
+    products = []; // Fallback to empty array so the app doesn't crash
   }
 }
 
@@ -220,15 +220,71 @@ if (categoryPillsEl) {
   });
 }
 
-byId('checkout-btn').addEventListener('click', () => {
+byId('checkout-btn').addEventListener('click', async () => {
   if (cart.length === 0) return;
 
   const nameInput = byId('customer-name').value.trim();
+  const phoneInput = byId('customer-phone') ? byId('customer-phone').value.trim() : '';
   const addressInput = byId('delivery-address').value.trim();
 
-  if (!nameInput || !addressInput) {
-    showToast('Please enter your name and delivery address');
+  if (!nameInput || !phoneInput || !addressInput) {
+    showToast('Please fill in your name, phone number, and delivery address');
     return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const custId = 'CUST-' + Date.now();
+
+  // 1. Sync Customer Record to Firestore for internal CRM
+  try {
+    const custPayload = {
+      id: custId,
+      name: nameInput,
+      phone: phoneInput,
+      area: addressInput,
+      status: 'Active',
+      dateAdded: today,
+      lastPurchase: today,
+      notes: 'Web Storefront Order',
+      updatedAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'customers', custId), custPayload);
+
+    // 2. Sync Sales Orders & Deduct Stock in Firestore
+    for (let index = 0; index < cart.length; index++) {
+      const item = cart[index];
+      const saleId = 'SALE-' + Date.now() + '-' + index;
+      const totalAmount = (item.qty || 1) * (item.price || 0);
+
+      const salePayload = {
+        id: saleId,
+        date: today,
+        customerId: custId,
+        customerName: nameInput,
+        productId: item.id || '',
+        productName: item.name,
+        quantity: item.qty || 1,
+        unitPrice: item.price || 0,
+        total: totalAmount,
+        paymentStatus: 'Paid',
+        deliveryStatus: 'Processing',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'sales', saleId), salePayload);
+
+      // Deduct stock in Firestore
+      if (item.id) {
+        try {
+          await updateDoc(doc(db, 'products', item.id), {
+            stockOut: increment(item.qty || 1)
+          });
+        } catch (sErr) {
+          console.warn('Stock deduction note:', sErr.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Firestore customer/sale sync note:', err.message);
   }
 
   const lines = cart
@@ -236,7 +292,7 @@ byId('checkout-btn').addEventListener('click', () => {
     .join('\n');
 
   const total = moneyZA(getCartTotal(cart));
-  const msg = `*New Order Request*\n\n*Customer Details:*\nName: ${nameInput}\nAddress: ${addressInput}\n\n*Order Items:*\n${lines}\n\n*Total: ${total}*`;
+  const msg = `*New Order Request*\n\n*Customer Details:*\nName: ${nameInput}\nPhone: ${phoneInput}\nAddress: ${addressInput}\n\n*Order Items:*\n${lines}\n\n*Total: ${total}*`;
 
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 });

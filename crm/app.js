@@ -229,7 +229,8 @@ class ProductionHubStore {
         const db = fbManager.db;
         if (db) {
             try {
-                await db.collection('products').doc(productId).update({ stockIn: newStockIn });
+                const inc = firebase.firestore.FieldValue.increment(parseInt(additionalQty));
+                await db.collection('products').doc(productId).update({ stockIn: inc });
             } catch (err) {
                 console.error("Firestore stock update error:", err);
             }
@@ -364,9 +365,9 @@ class ProductionHubStore {
 
                 // 2. Auto-deduct stock from product stockOut
                 if (product) {
-                    const currentStockOut = parseInt(product.stockOut) || 0;
+                    const inc = firebase.firestore.FieldValue.increment(quantity);
                     await db.collection('products').doc(product.id).update({
-                        stockOut: currentStockOut
+                        stockOut: inc
                     });
                 }
 
