@@ -973,21 +973,37 @@
             <form id="firebaseSettingsForm">
                 <div class="modal-body">
                     <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">
-                        Paste your Web App Firebase configuration object keys here to connect to your live Firebase
-                        Cloud Firestore database.
+                        Paste your Firebase Web App configuration below to connect real-time multi-device cloud database sync.
                     </p>
+                    <div class="form-group full-width" style="margin-bottom: 16px;">
+                        <label>Paste Firebase Config Snippet (JSON or JS Object from Firebase Console)</label>
+                        <textarea id="cfgPasteBox" rows="4" placeholder="const firebaseConfig = { apiKey: &quot;AIza...&quot;, authDomain: &quot;...&quot;, projectId: &quot;...&quot; };" style="font-family: monospace; font-size: 12px;"></textarea>
+                    </div>
+                    <div style="font-size: 12px; color: var(--slate-500); font-weight: 600; margin-bottom: 12px;">OR Edit Individual Fields:</div>
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>API Key (apiKey)</label>
-                            <input type="text" id="cfgApiKey" required>
+                            <input type="text" id="cfgApiKey" placeholder="AIzaSy...">
                         </div>
                         <div class="form-group">
                             <label>Auth Domain (authDomain)</label>
-                            <input type="text" id="cfgAuthDomain" required>
+                            <input type="text" id="cfgAuthDomain" placeholder="project-id.firebaseapp.com">
                         </div>
                         <div class="form-group">
                             <label>Project ID (projectId)</label>
-                            <input type="text" id="cfgProjectId" required>
+                            <input type="text" id="cfgProjectId" placeholder="project-id">
+                        </div>
+                        <div class="form-group">
+                            <label>Storage Bucket (storageBucket)</label>
+                            <input type="text" id="cfgStorageBucket" placeholder="project-id.appspot.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Messaging Sender ID</label>
+                            <input type="text" id="cfgMessagingSenderId" placeholder="1234567890">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>App ID (appId)</label>
+                            <input type="text" id="cfgAppId" placeholder="1:1234567890:web:abcdef...">
                         </div>
                     </div>
                 </div>

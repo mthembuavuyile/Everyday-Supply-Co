@@ -107,8 +107,15 @@ class CRMStore {
         
         collections.forEach(col => {
             const unsub = db.collection(col).onSnapshot(snapshot => {
-                this.isCloudConnected = true;
-                if (snapshot.empty && this.data[col].length > 0) {
+                const isLive = snapshot.metadata && !snapshot.metadata.fromCache;
+                if (isLive) {
+                    this.isCloudConnected = true;
+                    this.updateConnBadge(true, "Cloud Connected");
+                } else {
+                    this.updateConnBadge(false, "Local Offline");
+                }
+
+                if (snapshot.empty && this.data[col].length > 0 && isLive) {
                     // Seed initial data to Firestore if collection is empty
                     this.seedCollectionToFirestore(col);
                 } else {
@@ -122,11 +129,10 @@ class CRMStore {
                         renderAllSections();
                     }
                 }
-                this.updateConnBadge(true, "Cloud Connected");
             }, err => {
                 this.isCloudConnected = false;
                 console.warn(`Firestore sync note for ${col}: operating in local offline storage mode (${err.code || err.message})`);
-                this.updateConnBadge(false, "Local Offline Mode");
+                this.updateConnBadge(false, "Local Offline");
             });
             this.unsubscribers.push(unsub);
         });
@@ -963,18 +969,42 @@ function initModals() {
     const fbForm = document.getElementById('firebaseSettingsForm');
     if (fbForm) {
         const cfg = fbManager.config;
-        document.getElementById('cfgApiKey').value = cfg.apiKey || '';
-        document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
-        document.getElementById('cfgProjectId').value = cfg.projectId || '';
+        if (document.getElementById('cfgApiKey')) document.getElementById('cfgApiKey').value = cfg.apiKey || '';
+        if (document.getElementById('cfgAuthDomain')) document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
+        if (document.getElementById('cfgProjectId')) document.getElementById('cfgProjectId').value = cfg.projectId || '';
+        if (document.getElementById('cfgStorageBucket')) document.getElementById('cfgStorageBucket').value = cfg.storageBucket || '';
+        if (document.getElementById('cfgMessagingSenderId')) document.getElementById('cfgMessagingSenderId').value = cfg.messagingSenderId || '';
+        if (document.getElementById('cfgAppId')) document.getElementById('cfgAppId').value = cfg.appId || '';
+
+        const pasteBox = document.getElementById('cfgPasteBox');
+        if (pasteBox) {
+            pasteBox.addEventListener('input', () => {
+                const text = pasteBox.value;
+                const extract = (key) => {
+                    const match = text.match(new RegExp(`${key}\\s*:\\s*["']([^"']+)["']`));
+                    return match ? match[1] : '';
+                };
+                if (extract('apiKey')) document.getElementById('cfgApiKey').value = extract('apiKey');
+                if (extract('authDomain')) document.getElementById('cfgAuthDomain').value = extract('authDomain');
+                if (extract('projectId')) document.getElementById('cfgProjectId').value = extract('projectId');
+                if (extract('storageBucket')) document.getElementById('cfgStorageBucket').value = extract('storageBucket');
+                if (extract('messagingSenderId')) document.getElementById('cfgMessagingSenderId').value = extract('messagingSenderId');
+                if (extract('appId')) document.getElementById('cfgAppId').value = extract('appId');
+            });
+        }
 
         fbForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            fbManager.saveConfig({
-                apiKey: document.getElementById('cfgApiKey').value,
-                authDomain: document.getElementById('cfgAuthDomain').value,
-                projectId: document.getElementById('cfgProjectId').value
-            });
-            showToast("Firebase Config saved. Reloading...", "success");
+            const newCfg = {
+                apiKey: document.getElementById('cfgApiKey').value.trim(),
+                authDomain: document.getElementById('cfgAuthDomain').value.trim(),
+                projectId: document.getElementById('cfgProjectId').value.trim(),
+                storageBucket: document.getElementById('cfgStorageBucket').value.trim(),
+                messagingSenderId: document.getElementById('cfgMessagingSenderId').value.trim(),
+                appId: document.getElementById('cfgAppId').value.trim()
+            };
+            fbManager.saveConfig(newCfg);
+            showToast("Firebase Config saved! Reloading for live Cloud sync...", "success");
         });
     }
 

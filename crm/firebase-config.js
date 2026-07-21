@@ -3,14 +3,14 @@
  * Seamless integration with Firebase Auth, Cloud Firestore, and Offline Persistence.
  */
 
-// Default Firebase Configuration (Update with your project keys from Firebase Console)
+// Live Firebase Configuration for Everyday Supply Co.
 const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDemoConfigKeyForEverydaySupplyCRM",
-    authDomain: "everydaysupply-co.firebaseapp.com",
-    projectId: "everydaysupply-co",
-    storageBucket: "everydaysupply-co.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdef1234567890"
+    apiKey: "AIzaSyDHklaBKNn0_FZ2Gqk32-QAjxhjGq3clAY",
+    authDomain: "everyday-supply-co.firebaseapp.com",
+    projectId: "everyday-supply-co",
+    storageBucket: "everyday-supply-co.firebasestorage.app",
+    messagingSenderId: "694326382277",
+    appId: "1:694326382277:web:94c510004ba1010268aaac"
 };
 
 class FirebaseManager {
@@ -28,7 +28,10 @@ class FirebaseManager {
         const stored = localStorage.getItem(this.configKey);
         if (stored) {
             try {
-                return JSON.parse(stored);
+                const parsed = JSON.parse(stored);
+                if (parsed && parsed.apiKey && !parsed.apiKey.includes('DemoConfigKey')) {
+                    return parsed;
+                }
             } catch (e) {
                 console.error("Error reading saved Firebase config:", e);
             }
