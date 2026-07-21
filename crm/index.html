@@ -4,8 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Everyday Supply Co. - Business CRM</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK v10 (Compat version for lightweight Vanilla JS integration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Everyday Supply CRM Configuration & Application Logic -->
+    <script src="firebase-config.js"></script>
     <script src="app.js" defer></script>
 </head>
 
@@ -116,8 +121,22 @@
 
             <div class="sidebar-footer">
                 <div class="store-status">
-                    <span class="status-dot"></span>
-                    <span>JHB Warehouse Active</span>
+                    <span class="status-dot" id="firebaseConnDot"></span>
+                    <span id="firebaseConnText">Cloud Syncing</span>
+                </div>
+                <div class="user-auth-footer">
+                    <div class="user-info-text">
+                        <span class="user-email-display" id="userEmailDisplay">Guest User</span>
+                        <span class="user-role-badge" id="userRoleBadge">Offline Mode</span>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openModal('firebaseSettingsModal')" title="Firebase Connection Settings">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        </button>
+                        <button class="btn btn-sm btn-primary btn-icon-only" id="authBtn" onclick="toggleAuthModal()" title="Sign In / Out">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -471,6 +490,15 @@
                         <h1>Stock & Warehouse Inventory</h1>
                         <p>Track box quantities, stock in/out movement, and restock minimum thresholds.</p>
                     </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openProductModal()">
+                            <svg class="icon" viewBox="0 0 24 24">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            + Add New Product
+                        </button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -798,6 +826,162 @@
             </form>
         </div>
     </div>
+
+    <!-- 5. New Product Modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Product to Inventory</h2>
+                <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
+            </div>
+            <form id="productForm">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Product / Item Name *</label>
+                            <input type="text" name="name" placeholder="e.g. Moreson Eggs - Box 360 Eggs" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select name="category" required>
+                                <option value="Pantry" selected>Pantry</option>
+                                <option value="Noodles">Noodles</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Cleaning">Cleaning</option>
+                                <option value="Other">Other Wholesale</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Selling Price per Unit (ZAR) *</label>
+                            <input type="number" name="price" step="0.01" placeholder="e.g. 180.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Initial Opening Stock (Boxes) *</label>
+                            <input type="number" name="openingStock" min="0" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Restock Alert Threshold *</label>
+                            <input type="number" name="minStock" min="1" value="15" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. Edit Customer Modal -->
+    <div class="modal" id="editCustomerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Customer Details</h2>
+                <button class="modal-close" onclick="closeModal('editCustomerModal')">&times;</button>
+            </div>
+            <form id="editCustomerForm">
+                <input type="hidden" name="id" id="editCustomerId">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" id="editCustomerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone / WhatsApp Number *</label>
+                            <input type="tel" name="phone" id="editCustomerPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Residence / Area *</label>
+                            <input type="text" name="area" id="editCustomerArea" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Customer Status</label>
+                            <select name="status" id="editCustomerStatus">
+                                <option value="Lead">Lead</option>
+                                <option value="Active">Active Buyer</option>
+                                <option value="Repeat">Repeat Buyer</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Notes & Delivery Preferences</label>
+                            <textarea name="notes" id="editCustomerNotes"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editCustomerModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. Authentication Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2 id="authModalTitle">Sign In to Everyday CRM</h2>
+                <button class="modal-close" onclick="closeModal('authModal')">&times;</button>
+            </div>
+            <form id="authForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="authEmail" placeholder="admin@everydaysupply.co.za" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="authPassword" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="modal-footer" style="flex-direction: column; gap: 8px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                    <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="handleGoogleSignIn()">Sign in with Google</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 8. Firebase Settings Modal -->
+    <div class="modal" id="firebaseSettingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Firebase Cloud Settings</h2>
+                <button class="modal-close" onclick="closeModal('firebaseSettingsModal')">&times;</button>
+            </div>
+            <form id="firebaseSettingsForm">
+                <div class="modal-body">
+                    <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">
+                        Paste your Web App Firebase configuration object keys here to connect to your live Firebase Cloud Firestore database.
+                    </p>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>API Key (apiKey)</label>
+                            <input type="text" id="cfgApiKey" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Auth Domain (authDomain)</label>
+                            <input type="text" id="cfgAuthDomain" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Project ID (projectId)</label>
+                            <input type="text" id="cfgProjectId" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="resetFirebaseConfig()">Reset to Demo Defaults</button>
+                    <button type="submit" class="btn btn-primary">Save & Connect Cloud</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
 </body>
 

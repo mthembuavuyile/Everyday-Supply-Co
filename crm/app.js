@@ -1,9 +1,10 @@
 /**
- * Everyday Supply Co. - CRM Version 1 Application Engine
- * Handlers for Customers, Sales, Follow-ups, Stock, and Reports.
+ * Everyday Supply Co. - Business CRM Engine v2 (Production Real App)
+ * Integrated with Firebase Cloud Firestore, Firebase Authentication,
+ * Offline Persistence, Real-time Sync, and Full Multi-module CRUD.
  */
 
-// Initial Seed Data tailored to Everyday Supply Co.
+// Initial Seed Data for Everyday Supply Co.
 const SEED_DATA = {
     products: [
         { id: 'PROD-101', name: 'Moreson Eggs - Box 360 Eggs', category: 'Pantry', price: 380.99, openingStock: 100, stockIn: 50, stockOut: 35, minStock: 25 },
@@ -39,35 +40,117 @@ function getTodayISOString() {
     return today.toISOString().split('T')[0];
 }
 
-// App State Management
+// Modern Toast Notification Utility
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>${escapeHtml(message)}</span>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// App State Management (Firestore + Local Sync)
 class CRMStore {
     constructor() {
         this.STORAGE_KEY = 'everyday_supply_crm_v1';
-        this.data = this.loadData();
+        this.data = this.loadLocalData();
+        this.unsubscribers = [];
+        this.initFirestoreSync();
     }
 
-    loadData() {
+    loadLocalData() {
         const stored = localStorage.getItem(this.STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (e) {
-                console.error("Error parsing stored CRM data, loading defaults", e);
+                console.error("Error parsing stored CRM data, loading seed data", e);
             }
         }
         return JSON.parse(JSON.stringify(SEED_DATA));
     }
 
-    saveData() {
+    saveLocalData() {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
     }
 
-    resetToDefaults() {
-        this.data = JSON.parse(JSON.stringify(SEED_DATA));
-        this.saveData();
+    initFirestoreSync() {
+        if (!fbManager.init()) {
+            this.updateConnBadge(false, "Local Offline");
+            return;
+        }
+
+        const db = fbManager.db;
+
+        // Real-time Firestore Listeners
+        const collections = ['customers', 'products', 'sales', 'followups'];
+        
+        collections.forEach(col => {
+            const unsub = db.collection(col).onSnapshot(snapshot => {
+                if (snapshot.empty && this.data[col].length > 0) {
+                    // Seed initial data to Firestore if collection is empty
+                    this.seedCollectionToFirestore(col);
+                } else {
+                    const items = [];
+                    snapshot.forEach(doc => {
+                        items.push({ id: doc.id, ...doc.data() });
+                    });
+                    if (items.length > 0) {
+                        this.data[col] = items;
+                        this.saveLocalData();
+                        renderAllSections();
+                    }
+                }
+                this.updateConnBadge(true, "Cloud Connected");
+            }, err => {
+                console.warn(`Firestore sync warning for ${col}:`, err.message);
+                this.updateConnBadge(false, "Offline Sync");
+            });
+            this.unsubscribers.push(unsub);
+        });
     }
 
-    // Customers CRUD
+    async seedCollectionToFirestore(colName) {
+        if (!fbManager.db) return;
+        const db = fbManager.db;
+        const batch = db.batch();
+        const items = this.data[colName] || [];
+
+        items.forEach(item => {
+            const docRef = db.collection(colName).doc(item.id);
+            batch.set(docRef, item);
+        });
+
+        try {
+            await batch.commit();
+            console.log(`Successfully seeded ${colName} to Cloud Firestore.`);
+        } catch (e) {
+            console.warn(`Could not seed ${colName} to Firestore:`, e.message);
+        }
+    }
+
+    updateConnBadge(isOnline, label) {
+        const dot = document.getElementById('firebaseConnDot');
+        const text = document.getElementById('firebaseConnText');
+        if (dot && text) {
+            dot.style.background = isOnline ? 'var(--success)' : 'var(--warning)';
+            text.textContent = label;
+        }
+    }
+
+    // CUSTOMERS CRUD
     getCustomers() {
         return this.data.customers;
     }
@@ -77,7 +160,12 @@ class CRMStore {
         customer.dateAdded = getTodayISOString();
         customer.lastPurchase = customer.lastPurchase || '';
         this.data.customers.unshift(customer);
-        this.saveData();
+        this.saveLocalData();
+
+        if (fbManager.db) {
+            fbManager.db.collection('customers').doc(customer.id).set(customer).catch(console.warn);
+        }
+        showToast(`Customer ${customer.name} added successfully.`, 'success');
         return customer;
     }
 
@@ -85,20 +173,35 @@ class CRMStore {
         const index = this.data.customers.findIndex(c => c.id === id);
         if (index !== -1) {
             this.data.customers[index] = { ...this.data.customers[index], ...updatedFields };
-            this.saveData();
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('customers').doc(id).update(updatedFields).catch(console.warn);
+            }
+            showToast(`Customer updated.`, 'info');
         }
     }
 
     deleteCustomer(id) {
-        this.data.customers = this.data.customers.filter(c => c.id !== id);
-        this.saveData();
+        const cust = this.data.customers.find(c => c.id === id);
+        if (confirm(`Are you sure you want to delete customer "${cust ? cust.name : id}"?`)) {
+            this.data.customers = this.data.customers.filter(c => c.id !== id);
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('customers').doc(id).delete().catch(console.warn);
+            }
+            showToast(`Customer deleted.`, 'warning');
+            renderCustomers();
+            renderDashboard();
+        }
     }
 
-    // Products & Inventory
+    // PRODUCTS & INVENTORY CRUD
     getProducts() {
         return this.data.products.map(p => {
-            const currentStock = p.openingStock + p.stockIn - p.stockOut;
-            const needsRestock = currentStock <= p.minStock;
+            const currentStock = (parseInt(p.openingStock) || 0) + (parseInt(p.stockIn) || 0) - (parseInt(p.stockOut) || 0);
+            const needsRestock = currentStock <= (parseInt(p.minStock) || 10);
             return { ...p, currentStock, needsRestock };
         });
     }
@@ -110,19 +213,47 @@ class CRMStore {
         prod.stockOut = 0;
         prod.minStock = parseInt(prod.minStock) || 10;
         prod.price = parseFloat(prod.price) || 0;
+        
         this.data.products.push(prod);
-        this.saveData();
+        this.saveLocalData();
+
+        if (fbManager.db) {
+            fbManager.db.collection('products').doc(prod.id).set(prod).catch(console.warn);
+        }
+        showToast(`Product ${prod.name} added to inventory.`, 'success');
+        return prod;
+    }
+
+    deleteProduct(id) {
+        const prod = this.data.products.find(p => p.id === id);
+        if (confirm(`Are you sure you want to delete product "${prod ? prod.name : id}"?`)) {
+            this.data.products = this.data.products.filter(p => p.id !== id);
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('products').doc(id).delete().catch(console.warn);
+            }
+            showToast(`Product removed from inventory.`, 'warning');
+            renderStock();
+            renderDashboard();
+        }
     }
 
     addStockIn(productId, qty) {
         const prod = this.data.products.find(p => p.id === productId);
         if (prod) {
-            prod.stockIn += parseInt(qty);
-            this.saveData();
+            const addedQty = parseInt(qty) || 0;
+            prod.stockIn = (parseInt(prod.stockIn) || 0) + addedQty;
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('products').doc(productId).update({ stockIn: prod.stockIn }).catch(console.warn);
+            }
+            showToast(`Received +${addedQty} boxes of ${prod.name}`, 'success');
         }
     }
 
-    // Sales Module
+    // SALES MODULE CRUD
     getSales() {
         return this.data.sales;
     }
@@ -131,8 +262,8 @@ class CRMStore {
         const customer = this.data.customers.find(c => c.id === saleData.customerId);
         const product = this.data.products.find(p => p.id === saleData.productId);
 
-        const qty = parseInt(saleData.quantity);
-        const price = parseFloat(saleData.unitPrice) || (product ? product.price : 0);
+        const qty = parseInt(saleData.quantity) || 1;
+        const price = parseFloat(saleData.unitPrice) || (product ? parseFloat(product.price) : 0);
         const total = qty * price;
 
         const sale = {
@@ -151,33 +282,67 @@ class CRMStore {
 
         this.data.sales.unshift(sale);
 
-        // Auto deduct inventory stock out
+        // Auto deduct stock out
         if (product) {
-            product.stockOut += qty;
+            product.stockOut = (parseInt(product.stockOut) || 0) + qty;
+            if (fbManager.db) {
+                fbManager.db.collection('products').doc(product.id).update({ stockOut: product.stockOut }).catch(console.warn);
+            }
         }
 
-        // Auto update customer last purchase date and status
+        // Update customer activity
         if (customer) {
             customer.lastPurchase = sale.date;
             if (customer.status === 'Lead' || customer.status === 'Inactive') {
                 customer.status = 'Active';
             }
+            if (fbManager.db) {
+                fbManager.db.collection('customers').doc(customer.id).update({
+                    lastPurchase: customer.lastPurchase,
+                    status: customer.status
+                }).catch(console.warn);
+            }
         }
 
-        this.saveData();
+        this.saveLocalData();
+
+        if (fbManager.db) {
+            fbManager.db.collection('sales').doc(sale.id).set(sale).catch(console.warn);
+        }
+        showToast(`Order ${sale.id} recorded (${qty} boxes).`, 'success');
         return sale;
     }
 
     updateSaleStatus(saleId, paymentStatus, deliveryStatus) {
         const sale = this.data.sales.find(s => s.id === saleId);
         if (sale) {
-            if (paymentStatus) sale.paymentStatus = paymentStatus;
-            if (deliveryStatus) sale.deliveryStatus = deliveryStatus;
-            this.saveData();
+            const updates = {};
+            if (paymentStatus) { sale.paymentStatus = paymentStatus; updates.paymentStatus = paymentStatus; }
+            if (deliveryStatus) { sale.deliveryStatus = deliveryStatus; updates.deliveryStatus = deliveryStatus; }
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('sales').doc(saleId).update(updates).catch(console.warn);
+            }
+            showToast(`Order ${saleId} status updated.`, 'info');
         }
     }
 
-    // Follow-ups Module
+    deleteSale(id) {
+        if (confirm(`Are you sure you want to delete order ${id}?`)) {
+            this.data.sales = this.data.sales.filter(s => s.id !== id);
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('sales').doc(id).delete().catch(console.warn);
+            }
+            showToast(`Order ${id} deleted.`, 'warning');
+            renderSales();
+            renderDashboard();
+        }
+    }
+
+    // FOLLOW-UPS MODULE CRUD
     getFollowups() {
         return this.data.followups;
     }
@@ -188,28 +353,48 @@ class CRMStore {
         fol.customerName = customer ? customer.name : 'Unknown Customer';
         fol.phone = customer ? customer.phone : fol.phone || '';
         fol.status = 'Pending';
+
         this.data.followups.unshift(fol);
-        this.saveData();
+        this.saveLocalData();
+
+        if (fbManager.db) {
+            fbManager.db.collection('followups').doc(fol.id).set(fol).catch(console.warn);
+        }
+        showToast(`Follow-up scheduled for ${fol.customerName}.`, 'success');
     }
 
     toggleFollowupStatus(id) {
         const fol = this.data.followups.find(f => f.id === id);
         if (fol) {
             fol.status = fol.status === 'Pending' ? 'Completed' : 'Pending';
-            this.saveData();
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('followups').doc(id).update({ status: fol.status }).catch(console.warn);
+            }
+            showToast(`Follow-up marked as ${fol.status}.`, 'info');
         }
     }
 
     deleteFollowup(id) {
-        this.data.followups = this.data.followups.filter(f => f.id !== id);
-        this.saveData();
+        if (confirm(`Delete this follow-up reminder?`)) {
+            this.data.followups = this.data.followups.filter(f => f.id !== id);
+            this.saveLocalData();
+
+            if (fbManager.db) {
+                fbManager.db.collection('followups').doc(id).delete().catch(console.warn);
+            }
+            showToast(`Follow-up removed.`, 'warning');
+            renderFollowups();
+            renderDashboard();
+        }
     }
 }
 
-// Global App Instance
+// Global Store Instance
 const store = new CRMStore();
 
-// Utility Functions
+// Helper Formatting & Sanitizing Functions
 function formatCurrency(val) {
     return 'R ' + parseFloat(val || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -223,10 +408,20 @@ function sanitizeWhatsAppPhone(phone) {
     return cleaned;
 }
 
-// Global Renderers & Controllers
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initModals();
+    initAuthListeners();
     renderAllSections();
 });
 
@@ -242,7 +437,6 @@ function initNavigation() {
         item.addEventListener('click', () => {
             const targetSection = item.getAttribute('data-section');
 
-            // Update active state in both desktop and mobile navigation
             document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(el => {
                 if (el.getAttribute('data-section') === targetSection) {
                     el.classList.add('active');
@@ -251,7 +445,6 @@ function initNavigation() {
                 }
             });
 
-            // Show active section
             sections.forEach(sec => {
                 if (sec.id === targetSection) {
                     sec.classList.add('active');
@@ -260,11 +453,8 @@ function initNavigation() {
                 }
             });
 
-            // Close mobile menu if open
             sidebar.classList.remove('open');
             mobileOverlay.classList.remove('active');
-
-            // Refresh target view data
             renderSection(targetSection);
         });
     });
@@ -302,34 +492,24 @@ function renderSection(sectionId) {
     }
 }
 
-// ----------------------------------------------------
-// DASHBOARD MODULE
-// ----------------------------------------------------
+// DASHBOARD MODULE RENDERER
 function renderDashboard() {
     const customers = store.getCustomers();
     const sales = store.getSales();
     const products = store.getProducts();
     const followups = store.getFollowups();
 
-    // Key Stats
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(c => c.status === 'Active' || c.status === 'Repeat').length;
-
-    // Boxes Sold this week (or overall)
     const boxesSoldThisWeek = sales.reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);
-
-    // Current Total Warehouse Stock
     const totalCurrentStock = products.reduce((sum, p) => sum + p.currentStock, 0);
 
-    // Follow-ups due today or pending
     const today = getTodayISOString();
     const followupsDueToday = followups.filter(f => f.status === 'Pending' && f.date <= today).length;
 
-    // Revenue & Credit
-    const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid').reduce((sum, s) => sum + s.total, 0);
-    const totalCredit = sales.filter(s => s.paymentStatus === 'Credit').reduce((sum, s) => sum + s.total, 0);
+    const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid').reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+    const totalCredit = sales.filter(s => s.paymentStatus === 'Credit').reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
-    // Update Dashboard DOM Elements
     document.getElementById('dashTotalCustomers').textContent = totalCustomers;
     document.getElementById('dashActiveCustomers').textContent = activeCustomers;
     document.getElementById('dashBoxesSold').textContent = boxesSoldThisWeek;
@@ -338,19 +518,17 @@ function renderDashboard() {
     document.getElementById('dashTotalRevenue').textContent = formatCurrency(totalRevenue);
     document.getElementById('dashOutstandingCredit').textContent = formatCurrency(totalCredit);
 
-    // Update Nav Badges
     const folBadge = document.getElementById('followupBadge');
     if (folBadge) {
         folBadge.textContent = followupsDueToday;
         folBadge.style.display = followupsDueToday > 0 ? 'inline-flex' : 'none';
     }
 
-    // Render Recent Activities Table
     const recentTableBody = document.getElementById('dashRecentSalesTable');
     if (recentTableBody) {
         const recentSales = sales.slice(0, 5);
         if (recentSales.length === 0) {
-            recentTableBody.innerHTML = `<tr><td colspan="6" class="empty-state">No recent sales recorded yet.</td></tr>`;
+            recentTableBody.innerHTML = `<tr><td colspan="7" class="empty-state">No recent sales recorded yet.</td></tr>`;
         } else {
             recentTableBody.innerHTML = recentSales.map(s => `
                 <tr>
@@ -360,13 +538,12 @@ function renderDashboard() {
                     <td>${escapeHtml(s.productName)}</td>
                     <td><strong>${s.quantity}</strong> boxes</td>
                     <td><strong>${formatCurrency(s.total)}</strong></td>
-                    <td><span class="badge badge-${s.paymentStatus.toLowerCase()}">${s.paymentStatus}</span></td>
+                    <td><span class="badge badge-${(s.paymentStatus || 'paid').toLowerCase()}">${s.paymentStatus}</span></td>
                 </tr>
             `).join('');
         }
     }
 
-    // Render Low Stock Alert Banner in Dashboard
     const lowStockAlertContainer = document.getElementById('dashLowStockAlerts');
     if (lowStockAlertContainer) {
         const restockItems = products.filter(p => p.needsRestock);
@@ -392,9 +569,7 @@ function renderDashboard() {
     }
 }
 
-// ----------------------------------------------------
-// CUSTOMER MODULE
-// ----------------------------------------------------
+// CUSTOMER MODULE RENDERER
 function renderCustomers() {
     const customers = store.getCustomers();
     const filterStatus = document.getElementById('customerFilterStatus')?.value || 'all';
@@ -423,9 +598,7 @@ function renderCustomers() {
         return `
             <tr>
                 <td><strong>${c.id}</strong></td>
-                <td>
-                    <strong style="color: var(--slate-900);">${escapeHtml(c.name)}</strong>
-                </td>
+                <td><strong style="color: var(--slate-900);">${escapeHtml(c.name)}</strong></td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span>${escapeHtml(c.phone)}</span>
@@ -435,21 +608,27 @@ function renderCustomers() {
                     </div>
                 </td>
                 <td>${escapeHtml(c.area)}</td>
-                <td><span class="badge badge-${c.status.toLowerCase()}">${c.status}</span></td>
+                <td><span class="badge badge-${(c.status || 'lead').toLowerCase()}">${c.status}</span></td>
                 <td>${c.dateAdded}</td>
                 <td>${c.lastPurchase ? c.lastPurchase : '<span style="color:var(--slate-400)">None</span>'}</td>
                 <td style="text-align: right;">
-                    <button class="btn btn-sm btn-secondary" onclick="openSaleModalForCustomer('${c.id}')">+ Sale</button>
-                    <button class="btn btn-sm btn-outline" onclick="openFollowupModalForCustomer('${c.id}')">+ Followup</button>
+                    <div style="display: inline-flex; gap: 4px;">
+                        <button class="btn btn-sm btn-secondary" onclick="openSaleModalForCustomer('${c.id}')" title="Record Sale">+ Sale</button>
+                        <button class="btn btn-sm btn-outline" onclick="openFollowupModalForCustomer('${c.id}')" title="Schedule Followup">+ Followup</button>
+                        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openEditCustomerModal('${c.id}')" title="Edit Customer">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button class="btn btn-sm btn-danger-outline btn-icon-only" onclick="store.deleteCustomer('${c.id}')" title="Delete Customer">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
     }).join('');
 }
 
-// ----------------------------------------------------
-// SALES MODULE
-// ----------------------------------------------------
+// SALES MODULE RENDERER
 function renderSales() {
     const sales = store.getSales();
     const filterPayment = document.getElementById('salesFilterPayment')?.value || 'all';
@@ -457,9 +636,9 @@ function renderSales() {
 
     let filtered = sales.filter(s => {
         const matchesPayment = filterPayment === 'all' || s.paymentStatus.toLowerCase() === filterPayment.toLowerCase();
-        const matchesSearch = s.customerName.toLowerCase().includes(searchQuery) ||
-                              s.productName.toLowerCase().includes(searchQuery) ||
-                              s.id.toLowerCase().includes(searchQuery);
+        const matchesSearch = (s.customerName || '').toLowerCase().includes(searchQuery) ||
+                              (s.productName || '').toLowerCase().includes(searchQuery) ||
+                              (s.id || '').toLowerCase().includes(searchQuery);
         return matchesPayment && matchesSearch;
     });
 
@@ -467,7 +646,7 @@ function renderSales() {
     if (!tbody) return;
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No sales records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="empty-state">No sales records found.</td></tr>`;
         return;
     }
 
@@ -494,13 +673,16 @@ function renderSales() {
                     <option value="Cancelled" ${s.deliveryStatus === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
             </td>
+            <td style="text-align: right;">
+                <button class="btn btn-sm btn-danger-outline btn-icon-only" onclick="store.deleteSale('${s.id}')" title="Delete Sale Record">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </td>
         </tr>
     `).join('');
 }
 
-// ----------------------------------------------------
-// FOLLOW-UP MODULE
-// ----------------------------------------------------
+// FOLLOW-UP MODULE RENDERER
 function renderFollowups() {
     const followups = store.getFollowups();
     const filterStatus = document.getElementById('followupFilterStatus')?.value || 'all';
@@ -540,30 +722,33 @@ function renderFollowups() {
                     ${escapeHtml(f.notes || 'No detailed notes provided.')}
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <button class="btn btn-sm ${f.status === 'Completed' ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollowup('${f.id}')">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
-                        ${f.status === 'Completed' ? 'Mark Pending' : 'Mark Completed'}
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-sm ${f.status === 'Completed' ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollowup('${f.id}')">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
+                            ${f.status === 'Completed' ? 'Mark Pending' : 'Mark Completed'}
+                        </button>
+                        ${waPhone ? `<a href="${waLink}" target="_blank" class="btn btn-sm btn-whatsapp">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            WhatsApp
+                        </a>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-danger-outline btn-icon-only" onclick="store.deleteFollowup('${f.id}')" title="Delete Followup">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
-                    ${waPhone ? `<a href="${waLink}" target="_blank" class="btn btn-sm btn-whatsapp">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                        WhatsApp
-                    </a>` : ''}
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// ----------------------------------------------------
-// STOCK MODULE
-// ----------------------------------------------------
+// STOCK MODULE RENDERER
 function renderStock() {
     const products = store.getProducts();
     const tbody = document.getElementById('stockTableBody');
     if (!tbody) return;
 
     if (products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No products registered in inventory.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No products registered in inventory.</td></tr>`;
         return;
     }
 
@@ -585,45 +770,45 @@ function renderStock() {
                 }
             </td>
             <td style="text-align: right;">
-                <button class="btn btn-sm btn-secondary" onclick="openStockInModal('${p.id}', '${escapeHtml(p.name)}')">+ Add Stock</button>
+                <div style="display: inline-flex; gap: 4px;">
+                    <button class="btn btn-sm btn-secondary" onclick="openStockInModal('${p.id}', '${escapeHtml(p.name)}')">+ Stock In</button>
+                    <button class="btn btn-sm btn-danger-outline btn-icon-only" onclick="store.deleteProduct('${p.id}')" title="Delete Product">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
 }
 
-// ----------------------------------------------------
-// REPORTS MODULE
-// ----------------------------------------------------
+// REPORTS MODULE RENDERER
 function renderReports() {
     const sales = store.getSales();
     const customers = store.getCustomers();
-    const products = store.getProducts();
 
-    const totalBoxesSold = sales.reduce((sum, s) => sum + s.quantity, 0);
-    const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid').reduce((sum, s) => sum + s.total, 0);
-    const outstandingCredit = sales.filter(s => s.paymentStatus === 'Credit').reduce((sum, s) => sum + s.total, 0);
+    const totalBoxesSold = sales.reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);
+    const totalRevenue = sales.filter(s => s.paymentStatus === 'Paid').reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+    const outstandingCredit = sales.filter(s => s.paymentStatus === 'Credit').reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
     
     const newCustomersCount = customers.filter(c => c.status === 'Lead' || c.status === 'Active').length;
     const repeatCustomersCount = customers.filter(c => c.status === 'Repeat').length;
 
-    // Report DOM updates
     document.getElementById('repTotalBoxes').textContent = totalBoxesSold;
     document.getElementById('repTotalRevenue').textContent = formatCurrency(totalRevenue);
     document.getElementById('repOutstandingCredit').textContent = formatCurrency(outstandingCredit);
     document.getElementById('repNewCustomers').textContent = newCustomersCount;
     document.getElementById('repRepeatCustomers').textContent = repeatCustomersCount;
 
-    // Product performance breakdown table
     const topProdTbody = document.getElementById('repTopProductsBody');
     if (topProdTbody) {
-        // Group sales by product
         const prodSalesMap = {};
         sales.forEach(s => {
-            if (!prodSalesMap[s.productName]) {
-                prodSalesMap[s.productName] = { boxes: 0, revenue: 0 };
+            const name = s.productName || 'Unknown Product';
+            if (!prodSalesMap[name]) {
+                prodSalesMap[name] = { boxes: 0, revenue: 0 };
             }
-            prodSalesMap[s.productName].boxes += s.quantity;
-            prodSalesMap[s.productName].revenue += s.total;
+            prodSalesMap[name].boxes += (parseInt(s.quantity) || 0);
+            prodSalesMap[name].revenue += parseFloat(s.total || 0);
         });
 
         const sortedProds = Object.keys(prodSalesMap).map(k => ({
@@ -642,11 +827,9 @@ function renderReports() {
     }
 }
 
-// ----------------------------------------------------
-// MODAL CONTROLLERS & ACTIONS
-// ----------------------------------------------------
+// MODALS AND FORMS CONTROLLER
 function initModals() {
-    // Form submits
+    // Add New Customer
     const customerForm = document.getElementById('customerForm');
     if (customerForm) {
         customerForm.addEventListener('submit', (e) => {
@@ -667,6 +850,49 @@ function initModals() {
         });
     }
 
+    // Edit Customer
+    const editCustomerForm = document.getElementById('editCustomerForm');
+    if (editCustomerForm) {
+        editCustomerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(editCustomerForm);
+            const id = formData.get('id');
+            const updated = {
+                name: formData.get('name'),
+                phone: formData.get('phone'),
+                area: formData.get('area'),
+                status: formData.get('status'),
+                notes: formData.get('notes')
+            };
+            store.updateCustomer(id, updated);
+            closeModal('editCustomerModal');
+            renderCustomers();
+            renderDashboard();
+        });
+    }
+
+    // Add New Product
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+        productForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(productForm);
+            const newProd = {
+                name: formData.get('name'),
+                category: formData.get('category'),
+                price: formData.get('price'),
+                openingStock: formData.get('openingStock'),
+                minStock: formData.get('minStock')
+            };
+            store.addProduct(newProd);
+            closeModal('productModal');
+            productForm.reset();
+            renderStock();
+            renderDashboard();
+        });
+    }
+
+    // Record Sale
     const saleForm = document.getElementById('saleForm');
     if (saleForm) {
         saleForm.addEventListener('submit', (e) => {
@@ -688,6 +914,7 @@ function initModals() {
         });
     }
 
+    // Add Followup
     const followupForm = document.getElementById('followupForm');
     if (followupForm) {
         followupForm.addEventListener('submit', (e) => {
@@ -707,6 +934,7 @@ function initModals() {
         });
     }
 
+    // Stock In
     const stockInForm = document.getElementById('stockInForm');
     if (stockInForm) {
         stockInForm.addEventListener('submit', (e) => {
@@ -720,12 +948,59 @@ function initModals() {
             renderDashboard();
         });
     }
+
+    // Firebase Settings Form
+    const fbForm = document.getElementById('firebaseSettingsForm');
+    if (fbForm) {
+        const cfg = fbManager.config;
+        document.getElementById('cfgApiKey').value = cfg.apiKey || '';
+        document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
+        document.getElementById('cfgProjectId').value = cfg.projectId || '';
+
+        fbForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            fbManager.saveConfig({
+                apiKey: document.getElementById('cfgApiKey').value,
+                authDomain: document.getElementById('cfgAuthDomain').value,
+                projectId: document.getElementById('cfgProjectId').value
+            });
+            showToast("Firebase Config saved. Reloading...", "success");
+        });
+    }
+
+    // Auth Form
+    const authForm = document.getElementById('authForm');
+    if (authForm) {
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPassword').value;
+            handleEmailPasswordSignIn(email, pass);
+        });
+    }
 }
 
-// Modal Trigger Helpers
+// Modal Helpers & Openers
 function openCustomerModal() {
     document.getElementById('customerForm').reset();
     openModal('customerModal');
+}
+
+function openEditCustomerModal(id) {
+    const cust = store.getCustomers().find(c => c.id === id);
+    if (!cust) return;
+    document.getElementById('editCustomerId').value = cust.id;
+    document.getElementById('editCustomerName').value = cust.name;
+    document.getElementById('editCustomerPhone').value = cust.phone;
+    document.getElementById('editCustomerArea').value = cust.area;
+    document.getElementById('editCustomerStatus').value = cust.status || 'Active';
+    document.getElementById('editCustomerNotes').value = cust.notes || '';
+    openModal('editCustomerModal');
+}
+
+function openProductModal() {
+    document.getElementById('productForm').reset();
+    openModal('productModal');
 }
 
 function openSaleModalForCustomer(customerId = '') {
@@ -752,7 +1027,7 @@ function populateCustomerDropdown(selectId, selectedId = '') {
     if (!select) return;
     const customers = store.getCustomers();
     select.innerHTML = '<option value="">Select Customer...</option>' + 
-        customers.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${escapeHtml(c.name)} (${c.area})</option>`).join('');
+        customers.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${escapeHtml(c.name)} (${escapeHtml(c.area)})</option>`).join('');
 }
 
 function populateProductDropdown(selectId) {
@@ -762,7 +1037,6 @@ function populateProductDropdown(selectId) {
     select.innerHTML = '<option value="">Select Product...</option>' +
         products.map(p => `<option value="${p.id}" data-price="${p.price}">${escapeHtml(p.name)} - R${p.price} (${p.currentStock} in stock)</option>`).join('');
     
-    // Auto populate price field when selecting product
     select.onchange = function() {
         const opt = select.options[select.selectedIndex];
         const price = opt.getAttribute('data-price');
@@ -804,14 +1078,93 @@ function closeModal(modalId) {
     if (modal) modal.classList.remove('active');
 }
 
-// Export CSV Functionality
+function resetFirebaseConfig() {
+    fbManager.resetConfig();
+}
+
+// AUTHENTICATION HANDLERS
+function initAuthListeners() {
+    if (!fbManager.auth) return;
+
+    fbManager.auth.onAuthStateChanged(user => {
+        const emailDisp = document.getElementById('userEmailDisplay');
+        const roleBadge = document.getElementById('userRoleBadge');
+        const authBtn = document.getElementById('authBtn');
+
+        if (user) {
+            fbManager.currentUser = user;
+            if (emailDisp) emailDisp.textContent = user.email || 'Authenticated User';
+            if (roleBadge) roleBadge.textContent = 'Admin Staff';
+            if (authBtn) {
+                authBtn.title = "Sign Out";
+                authBtn.onclick = handleSignOut;
+            }
+            showToast(`Signed in as ${user.email}`, 'success');
+        } else {
+            fbManager.currentUser = null;
+            if (emailDisp) emailDisp.textContent = 'Guest User';
+            if (roleBadge) roleBadge.textContent = 'Offline Mode';
+            if (authBtn) {
+                authBtn.title = "Sign In";
+                authBtn.onclick = toggleAuthModal;
+            }
+        }
+    });
+}
+
+function toggleAuthModal() {
+    if (fbManager.currentUser) {
+        handleSignOut();
+    } else {
+        openModal('authModal');
+    }
+}
+
+function handleEmailPasswordSignIn(email, password) {
+    if (!fbManager.auth) {
+        showToast("Firebase Auth not initialized. Running in local mode.", "warning");
+        closeModal('authModal');
+        return;
+    }
+
+    fbManager.auth.signInWithEmailAndPassword(email, password)
+        .then(() => closeModal('authModal'))
+        .catch(err => {
+            // If user doesn't exist, create demo account automatically
+            if (err.code === 'auth/user-not-found') {
+                fbManager.auth.createUserWithEmailAndPassword(email, password)
+                    .then(() => closeModal('authModal'))
+                    .catch(e => showToast(`Auth Error: ${e.message}`, 'error'));
+            } else {
+                showToast(`Sign in error: ${err.message}`, 'error');
+            }
+        });
+}
+
+function handleGoogleSignIn() {
+    if (!fbManager.auth) {
+        showToast("Firebase Auth not initialized.", "warning");
+        return;
+    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    fbManager.auth.signInWithPopup(provider)
+        .then(() => closeModal('authModal'))
+        .catch(err => showToast(`Google Auth Error: ${err.message}`, 'error'));
+}
+
+function handleSignOut() {
+    if (fbManager.auth) {
+        fbManager.auth.signOut().then(() => showToast("Signed out successfully.", "info"));
+    }
+}
+
+// EXPORT CSV FUNCTIONALITY
 function exportSalesCSV() {
     const sales = store.getSales();
     let csv = 'Sale ID,Date,Customer,Product,Quantity,Unit Price (ZAR),Total (ZAR),Payment Status,Delivery Status\n';
     sales.forEach(s => {
         csv += `"${s.id}","${s.date}","${s.customerName}","${s.productName}",${s.quantity},${s.unitPrice},${s.total},"${s.paymentStatus}","${s.deliveryStatus}"\n`;
     });
-
     downloadCSV(csv, `Everyday_Supply_Sales_${getTodayISOString()}.csv`);
 }
 
@@ -821,7 +1174,6 @@ function exportCustomersCSV() {
     customers.forEach(c => {
         csv += `"${c.id}","${c.name}","${c.phone}","${c.area}","${c.status}","${c.dateAdded}","${c.lastPurchase}","${(c.notes || '').replace(/"/g, '""')}"\n`;
     });
-
     downloadCSV(csv, `Everyday_Supply_Customers_${getTodayISOString()}.csv`);
 }
 
@@ -835,13 +1187,4 @@ function downloadCSV(csvContent, fileName) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
 }
