@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everyday Supply Co. - Business CRM Engine</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22><path d=%22M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z%22/><line x1=%223%22 y1=%226%22 x2=%2221%22 y2=%226%22/><path d=%22M16 10a4 4 0 0 1-8 0%22/></svg>">
     <link rel="stylesheet" href="style.css">
     <!-- Firebase SDK v10 (Compat version for lightweight Vanilla JS integration) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -130,11 +133,22 @@
                         <span class="user-role-badge" id="userRoleBadge">Offline Mode</span>
                     </div>
                     <div style="display: flex; gap: 4px;">
-                        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openModal('firebaseSettingsModal')" title="Firebase Connection Settings">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <button class="btn btn-sm btn-secondary btn-icon-only"
+                            onclick="openModal('firebaseSettingsModal')" title="Firebase Connection Settings">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                </path>
+                            </svg>
                         </button>
-                        <button class="btn btn-sm btn-primary btn-icon-only" id="authBtn" onclick="toggleAuthModal()" title="Sign In / Out">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                        <button class="btn btn-sm btn-primary btn-icon-only" id="authBtn" onclick="toggleAuthModal()"
+                            title="Sign In / Out">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                                <polyline points="10 17 15 12 10 7"></polyline>
+                                <line x1="15" y1="12" x2="3" y2="12"></line>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -912,7 +926,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editCustomerModal')">Cancel</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('editCustomerModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update Customer</button>
                 </div>
             </form>
@@ -930,16 +945,19 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" id="authEmail" placeholder="admin@everydaysupply.co.za" required>
+                        <input type="email" id="authEmail" placeholder="admin@everydaysupply.co.za" autocomplete="email"
+                            required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="authPassword" placeholder="••••••••" required>
+                        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password"
+                            required>
                     </div>
                 </div>
                 <div class="modal-footer" style="flex-direction: column; gap: 8px;">
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
-                    <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="handleGoogleSignIn()">Sign in with Google</button>
+                    <button type="button" class="btn btn-secondary" style="width: 100%;"
+                        onclick="handleGoogleSignIn()">Sign in with Google</button>
                 </div>
             </form>
         </div>
@@ -955,7 +973,8 @@
             <form id="firebaseSettingsForm">
                 <div class="modal-body">
                     <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">
-                        Paste your Web App Firebase configuration object keys here to connect to your live Firebase Cloud Firestore database.
+                        Paste your Web App Firebase configuration object keys here to connect to your live Firebase
+                        Cloud Firestore database.
                     </p>
                     <div class="form-grid">
                         <div class="form-group full-width">
@@ -973,7 +992,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="resetFirebaseConfig()">Reset to Demo Defaults</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetFirebaseConfig()">Reset to Demo
+                        Defaults</button>
                     <button type="submit" class="btn btn-primary">Save & Connect Cloud</button>
                 </div>
             </form>

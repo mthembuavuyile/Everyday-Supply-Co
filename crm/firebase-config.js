@@ -64,14 +64,18 @@ class FirebaseManager {
             this.db = firebase.firestore();
             this.auth = firebase.auth();
 
-            // Enable offline persistence
-            this.db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Multiple tabs open, offline persistence enabled in primary tab only.');
-                } else if (err.code === 'unimplemented') {
-                    console.warn('Browser does not support offline persistence.');
-                }
-            });
+            // Enable offline persistence without deprecation warnings
+            if (typeof this.db.enableIndexedDbPersistence === 'function') {
+                this.db.enableIndexedDbPersistence({ synchronizeTabs: true }).catch(err => {
+                    if (err.code === 'failed-precondition') {
+                        console.warn('Multiple tabs open, offline persistence enabled in primary tab only.');
+                    } else if (err.code === 'unimplemented') {
+                        console.warn('Browser does not support offline persistence.');
+                    }
+                });
+            } else if (typeof this.db.enablePersistence === 'function') {
+                this.db.enablePersistence().catch(() => {});
+            }
 
             this.isInitialized = true;
             console.log("Firebase initialized successfully for Everyday Supply Co.");

@@ -67,6 +67,7 @@ class CRMStore {
         this.STORAGE_KEY = 'everyday_supply_crm_v1';
         this.data = this.loadLocalData();
         this.unsubscribers = [];
+        this.isCloudConnected = false;
         this.initFirestoreSync();
     }
 
@@ -86,9 +87,16 @@ class CRMStore {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
     }
 
+    resetDemoData() {
+        this.data = JSON.parse(JSON.stringify(SEED_DATA));
+        this.saveLocalData();
+        renderAllSections();
+        showToast("Reset to default seed data successfully.", "success");
+    }
+
     initFirestoreSync() {
         if (!fbManager.init()) {
-            this.updateConnBadge(false, "Local Offline");
+            this.updateConnBadge(false, "Local Mode");
             return;
         }
 
@@ -99,6 +107,7 @@ class CRMStore {
         
         collections.forEach(col => {
             const unsub = db.collection(col).onSnapshot(snapshot => {
+                this.isCloudConnected = true;
                 if (snapshot.empty && this.data[col].length > 0) {
                     // Seed initial data to Firestore if collection is empty
                     this.seedCollectionToFirestore(col);
@@ -115,15 +124,16 @@ class CRMStore {
                 }
                 this.updateConnBadge(true, "Cloud Connected");
             }, err => {
-                console.warn(`Firestore sync warning for ${col}:`, err.message);
-                this.updateConnBadge(false, "Offline Sync");
+                this.isCloudConnected = false;
+                console.warn(`Firestore sync note for ${col}: operating in local offline storage mode (${err.code || err.message})`);
+                this.updateConnBadge(false, "Local Offline Mode");
             });
             this.unsubscribers.push(unsub);
         });
     }
 
     async seedCollectionToFirestore(colName) {
-        if (!fbManager.db) return;
+        if (!fbManager.db || !this.isCloudConnected) return;
         const db = fbManager.db;
         const batch = db.batch();
         const items = this.data[colName] || [];
@@ -162,8 +172,8 @@ class CRMStore {
         this.data.customers.unshift(customer);
         this.saveLocalData();
 
-        if (fbManager.db) {
-            fbManager.db.collection('customers').doc(customer.id).set(customer).catch(console.warn);
+        if (fbManager.db && this.isCloudConnected) {
+            fbManager.db.collection('customers').doc(customer.id).set(customer).catch(e => console.warn("Cloud write deferred:", e.message));
         }
         showToast(`Customer ${customer.name} added successfully.`, 'success');
         return customer;
@@ -175,8 +185,8 @@ class CRMStore {
             this.data.customers[index] = { ...this.data.customers[index], ...updatedFields };
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('customers').doc(id).update(updatedFields).catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('customers').doc(id).update(updatedFields).catch(e => console.warn("Cloud update deferred:", e.message));
             }
             showToast(`Customer updated.`, 'info');
         }
@@ -188,8 +198,8 @@ class CRMStore {
             this.data.customers = this.data.customers.filter(c => c.id !== id);
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('customers').doc(id).delete().catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('customers').doc(id).delete().catch(e => console.warn("Cloud delete deferred:", e.message));
             }
             showToast(`Customer deleted.`, 'warning');
             renderCustomers();
@@ -217,8 +227,8 @@ class CRMStore {
         this.data.products.push(prod);
         this.saveLocalData();
 
-        if (fbManager.db) {
-            fbManager.db.collection('products').doc(prod.id).set(prod).catch(console.warn);
+        if (fbManager.db && this.isCloudConnected) {
+            fbManager.db.collection('products').doc(prod.id).set(prod).catch(e => console.warn("Cloud write deferred:", e.message));
         }
         showToast(`Product ${prod.name} added to inventory.`, 'success');
         return prod;
@@ -230,8 +240,8 @@ class CRMStore {
             this.data.products = this.data.products.filter(p => p.id !== id);
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('products').doc(id).delete().catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('products').doc(id).delete().catch(e => console.warn("Cloud delete deferred:", e.message));
             }
             showToast(`Product removed from inventory.`, 'warning');
             renderStock();
@@ -246,8 +256,8 @@ class CRMStore {
             prod.stockIn = (parseInt(prod.stockIn) || 0) + addedQty;
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('products').doc(productId).update({ stockIn: prod.stockIn }).catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('products').doc(productId).update({ stockIn: prod.stockIn }).catch(e => console.warn("Cloud update deferred:", e.message));
             }
             showToast(`Received +${addedQty} boxes of ${prod.name}`, 'success');
         }
@@ -285,8 +295,8 @@ class CRMStore {
         // Auto deduct stock out
         if (product) {
             product.stockOut = (parseInt(product.stockOut) || 0) + qty;
-            if (fbManager.db) {
-                fbManager.db.collection('products').doc(product.id).update({ stockOut: product.stockOut }).catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('products').doc(product.id).update({ stockOut: product.stockOut }).catch(e => console.warn("Cloud update deferred:", e.message));
             }
         }
 
@@ -296,18 +306,18 @@ class CRMStore {
             if (customer.status === 'Lead' || customer.status === 'Inactive') {
                 customer.status = 'Active';
             }
-            if (fbManager.db) {
+            if (fbManager.db && this.isCloudConnected) {
                 fbManager.db.collection('customers').doc(customer.id).update({
                     lastPurchase: customer.lastPurchase,
                     status: customer.status
-                }).catch(console.warn);
+                }).catch(e => console.warn("Cloud update deferred:", e.message));
             }
         }
 
         this.saveLocalData();
 
-        if (fbManager.db) {
-            fbManager.db.collection('sales').doc(sale.id).set(sale).catch(console.warn);
+        if (fbManager.db && this.isCloudConnected) {
+            fbManager.db.collection('sales').doc(sale.id).set(sale).catch(e => console.warn("Cloud write deferred:", e.message));
         }
         showToast(`Order ${sale.id} recorded (${qty} boxes).`, 'success');
         return sale;
@@ -321,8 +331,8 @@ class CRMStore {
             if (deliveryStatus) { sale.deliveryStatus = deliveryStatus; updates.deliveryStatus = deliveryStatus; }
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('sales').doc(saleId).update(updates).catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('sales').doc(saleId).update(updates).catch(e => console.warn("Cloud update deferred:", e.message));
             }
             showToast(`Order ${saleId} status updated.`, 'info');
         }
@@ -333,8 +343,8 @@ class CRMStore {
             this.data.sales = this.data.sales.filter(s => s.id !== id);
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('sales').doc(id).delete().catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('sales').doc(id).delete().catch(e => console.warn("Cloud delete deferred:", e.message));
             }
             showToast(`Order ${id} deleted.`, 'warning');
             renderSales();
@@ -357,8 +367,8 @@ class CRMStore {
         this.data.followups.unshift(fol);
         this.saveLocalData();
 
-        if (fbManager.db) {
-            fbManager.db.collection('followups').doc(fol.id).set(fol).catch(console.warn);
+        if (fbManager.db && this.isCloudConnected) {
+            fbManager.db.collection('followups').doc(fol.id).set(fol).catch(e => console.warn("Cloud write deferred:", e.message));
         }
         showToast(`Follow-up scheduled for ${fol.customerName}.`, 'success');
     }
@@ -369,8 +379,8 @@ class CRMStore {
             fol.status = fol.status === 'Pending' ? 'Completed' : 'Pending';
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('followups').doc(id).update({ status: fol.status }).catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('followups').doc(id).update({ status: fol.status }).catch(e => console.warn("Cloud update deferred:", e.message));
             }
             showToast(`Follow-up marked as ${fol.status}.`, 'info');
         }
@@ -381,8 +391,8 @@ class CRMStore {
             this.data.followups = this.data.followups.filter(f => f.id !== id);
             this.saveLocalData();
 
-            if (fbManager.db) {
-                fbManager.db.collection('followups').doc(id).delete().catch(console.warn);
+            if (fbManager.db && this.isCloudConnected) {
+                fbManager.db.collection('followups').doc(id).delete().catch(e => console.warn("Cloud delete deferred:", e.message));
             }
             showToast(`Follow-up removed.`, 'warning');
             renderFollowups();
@@ -1079,7 +1089,16 @@ function closeModal(modalId) {
 }
 
 function resetFirebaseConfig() {
-    fbManager.resetConfig();
+    if (confirm("Reset Firebase configuration and local demo data to defaults?")) {
+        store.resetDemoData();
+        fbManager.resetConfig();
+    }
+}
+
+function resetDemoData() {
+    if (confirm("Are you sure you want to reset all customer, order, and inventory records to initial demo seed data?")) {
+        store.resetDemoData();
+    }
 }
 
 // AUTHENTICATION HANDLERS
