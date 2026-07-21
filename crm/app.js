@@ -52,6 +52,63 @@ function showToast(message, type = 'info') {
     }, 3500);
 }
 
+// Non-blocking Custom Confirmation Modal Utility
+let pendingConfirmCallback = null;
+
+function showConfirmDialog(title, message, confirmBtnLabel, onConfirm) {
+    if (byId('confirmModalTitle')) byId('confirmModalTitle').textContent = title;
+    if (byId('confirmModalText')) byId('confirmModalText').textContent = message;
+
+    const actionBtn = byId('confirmModalActionBtn');
+    if (actionBtn) {
+        actionBtn.textContent = confirmBtnLabel || 'Confirm';
+        pendingConfirmCallback = onConfirm;
+    }
+    openModal('confirmModal');
+}
+
+// Delegated action listener for dynamic table buttons
+document.addEventListener('click', (e) => {
+    // Confirmation modal action button
+    if (e.target && e.target.id === 'confirmModalActionBtn') {
+        if (typeof pendingConfirmCallback === 'function') {
+            const callback = pendingConfirmCallback;
+            pendingConfirmCallback = null;
+            closeModal('confirmModal');
+            callback();
+        } else {
+            closeModal('confirmModal');
+        }
+        return;
+    }
+
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    if (!action || !id) return;
+
+    if (action === 'stock-in') {
+        const prod = store.getProducts().find(p => p.id === id);
+        if (prod) openStockInModal(prod.id, prod.name);
+    } else if (action === 'edit-product') {
+        openProductModal(true, id);
+    } else if (action === 'delete-product') {
+        store.deleteProduct(id);
+    } else if (action === 'add-sale-cust') {
+        openSaleModalForCustomer(id);
+    } else if (action === 'edit-customer') {
+        openCustomerModal(true, id);
+    } else if (action === 'delete-customer') {
+        store.deleteCustomer(id);
+    } else if (action === 'complete-followup') {
+        store.markFollowupComplete(id);
+    } else if (action === 'delete-followup') {
+        store.deleteFollowup(id);
+    }
+});
+
 // App State Manager (Strict Real Data, No Simulation Seed Data)
 class ProductionHubStore {
     constructor() {
@@ -98,9 +155,21 @@ class ProductionHubStore {
         collections.forEach(col => {
             try {
                 const unsub = db.collection(col).onSnapshot(snapshot => {
-                    const isLive = snapshot.metadata && !snapshot.metadata.fromCache;
-                    this.isCloudConnected = isLive;
-                    this.updateConnBadge(isLive, isLive ? "Cloud Syncing" : "Local Offline");
+                    const isFromCache = snapshot.metadata && snapshot.metadata.fromCache;
+                    const isOnline = navigator.onLine;
+
+                    if (!isFromCache && isOnline) {
+                        this.isCloudConnected = true;
+                        this.updateConnBadge(true, "Cloud Syncing");
+                    } else if (isOnline && fbManager.auth && fbManager.auth.currentUser) {
+                        this.isCloudConnected = true;
+                        this.updateConnBadge(true, "Cloud Connected");
+                    } else if (isFromCache && isOnline) {
+                        this.updateConnBadge(true, "Cloud Syncing");
+                    } else {
+                        this.isCloudConnected = false;
+                        this.updateConnBadge(false, "Local Offline");
+                    }
 
                     const items = [];
                     snapshot.forEach(doc => {
@@ -112,7 +181,12 @@ class ProductionHubStore {
                     renderAllSections();
                 }, err => {
                     console.warn(`Firestore sync note for ${col}:`, err.message);
-                    this.updateConnBadge(false, "Local Offline");
+                    const isOnline = navigator.onLine;
+                    if (isOnline && fbManager.auth && fbManager.auth.currentUser) {
+                        this.updateConnBadge(true, "Cloud Connected");
+                    } else {
+                        this.updateConnBadge(false, "Local Offline");
+                    }
                 });
 
                 this.unsubscribers.push(unsub);
@@ -140,7 +214,10 @@ class ProductionHubStore {
             const currentStock = opening + stockIn - stockOut;
             const minStock = parseInt(p.minStock) || 5;
             const needsRestock = currentStock <= minStock;
-            const image = p.imageUrl || p.image || FALLBACK_IMAGE;
+            let image = p.imageUrl || p.image || '';
+            if (!image || image.includes('aceonlinesa.co.za')) {
+                image = FALLBACK_IMAGE;
+            }
             return { ...p, openingStock: opening, stockIn, stockOut, currentStock, minStock, needsRestock, image };
         });
     }
@@ -196,22 +273,26 @@ class ProductionHubStore {
 
     async deleteProduct(id) {
         const prod = this.data.products.find(p => p.id === id);
-        if (!confirm(`Permanently delete product "${prod ? prod.name : id}"?`)) return;
+        showConfirmDialog(
+            "Delete Product",
+            `Permanently delete product "${prod ? prod.name : id}"?`,
+            "Delete Product",
+            async () => {
+                this.data.products = this.data.products.filter(p => p.id !== id);
+                this.saveLocalCache();
+                renderAllSections();
+                showToast("Product deleted.", "warning");
 
-        // Optimistically remove locally
-        this.data.products = this.data.products.filter(p => p.id !== id);
-        this.saveLocalCache();
-        renderAllSections();
-        showToast("Product deleted.", "warning");
-
-        const db = fbManager.db;
-        if (db) {
-            try {
-                await db.collection('products').doc(id).delete();
-            } catch (err) {
-                console.error("Firestore delete error:", err);
+                const db = fbManager.db;
+                if (db) {
+                    try {
+                        await db.collection('products').doc(id).delete();
+                    } catch (err) {
+                        console.error("Firestore delete error:", err);
+                    }
+                }
             }
-        }
+        );
     }
 
     async addStockIn(productId, additionalQty) {
@@ -291,22 +372,26 @@ class ProductionHubStore {
 
     async deleteCustomer(id) {
         const cust = this.data.customers.find(c => c.id === id);
-        if (!confirm(`Delete customer record "${cust ? cust.name : id}"?`)) return;
+        showConfirmDialog(
+            "Delete Customer",
+            `Delete customer record "${cust ? cust.name : id}"?`,
+            "Delete Record",
+            async () => {
+                this.data.customers = this.data.customers.filter(c => c.id !== id);
+                this.saveLocalCache();
+                renderAllSections();
+                showToast("Customer record deleted.", "warning");
 
-        // Optimistically remove locally
-        this.data.customers = this.data.customers.filter(c => c.id !== id);
-        this.saveLocalCache();
-        renderAllSections();
-        showToast("Customer record deleted.", "warning");
-
-        const db = fbManager.db;
-        if (db) {
-            try {
-                await db.collection('customers').doc(id).delete();
-            } catch (err) {
-                console.error("Firestore delete customer error:", err);
+                const db = fbManager.db;
+                if (db) {
+                    try {
+                        await db.collection('customers').doc(id).delete();
+                    } catch (err) {
+                        console.error("Firestore delete customer error:", err);
+                    }
+                }
             }
-        }
+        );
     }
 
     // SALES & AUTOMATIC STOCK DEDUCTION
@@ -385,22 +470,26 @@ class ProductionHubStore {
     }
 
     async deleteSale(id) {
-        if (!confirm("Delete this sales order record?")) return;
+        showConfirmDialog(
+            "Delete Sale Record",
+            "Delete this sales order record?",
+            "Delete Sale",
+            async () => {
+                this.data.sales = this.data.sales.filter(s => s.id !== id);
+                this.saveLocalCache();
+                renderAllSections();
+                showToast("Sales order deleted.", "warning");
 
-        // Optimistically remove locally
-        this.data.sales = this.data.sales.filter(s => s.id !== id);
-        this.saveLocalCache();
-        renderAllSections();
-        showToast("Sales order deleted.", "warning");
-
-        const db = fbManager.db;
-        if (db) {
-            try {
-                await db.collection('sales').doc(id).delete();
-            } catch (err) {
-                console.error("Firestore delete sale error:", err);
+                const db = fbManager.db;
+                if (db) {
+                    try {
+                        await db.collection('sales').doc(id).delete();
+                    } catch (err) {
+                        console.error("Firestore delete sale error:", err);
+                    }
+                }
             }
-        }
+        );
     }
 
     // FOLLOW-UPS
@@ -460,21 +549,26 @@ class ProductionHubStore {
     }
 
     async deleteFollowup(id) {
-        if (!confirm("Delete this follow-up reminder?")) return;
+        showConfirmDialog(
+            "Delete Follow-up",
+            "Delete this follow-up reminder?",
+            "Delete Follow-up",
+            async () => {
+                this.data.followups = this.data.followups.filter(f => f.id !== id);
+                this.saveLocalCache();
+                renderAllSections();
+                showToast("Follow-up deleted.", "warning");
 
-        this.data.followups = this.data.followups.filter(f => f.id !== id);
-        this.saveLocalCache();
-        renderAllSections();
-        showToast("Follow-up deleted.", "warning");
-
-        const db = fbManager.db;
-        if (db) {
-            try {
-                await db.collection('followups').doc(id).delete();
-            } catch (err) {
-                console.error("Firestore delete followup error:", err);
+                const db = fbManager.db;
+                if (db) {
+                    try {
+                        await db.collection('followups').doc(id).delete();
+                    } catch (err) {
+                        console.error("Firestore delete followup error:", err);
+                    }
+                }
             }
-        }
+        );
     }
 }
 
@@ -712,9 +806,9 @@ function renderStock() {
             <td><span class="badge ${p.needsRestock ? 'badge-restock' : 'badge-instock'}">${p.needsRestock ? 'LOW STOCK' : 'In Stock'}</span></td>
             <td style="text-align: right;">
                 <div style="display: flex; gap: 4px; justify-content: flex-end;">
-                    <button class="btn btn-sm btn-secondary" onclick="openStockInModal('${p.id}', '${escapeHtml(p.name.replace(/'/g, "\\'"))}')">+ Stock In</button>
-                    <button class="btn btn-sm btn-secondary" onclick="openProductModal(true, '${p.id}')">Edit</button>
-                    <button class="btn btn-sm btn-danger-outline" onclick="store.deleteProduct('${p.id}')">Delete</button>
+                    <button class="btn btn-sm btn-secondary" data-action="stock-in" data-id="${escapeHtml(p.id)}">+ Stock In</button>
+                    <button class="btn btn-sm btn-secondary" data-action="edit-product" data-id="${escapeHtml(p.id)}">Edit</button>
+                    <button class="btn btn-sm btn-danger-outline" data-action="delete-product" data-id="${escapeHtml(p.id)}">Delete</button>
                 </div>
             </td>
         `;
@@ -771,9 +865,9 @@ function renderCustomers() {
             <td>${escapeHtml(c.lastPurchase || 'None')}</td>
             <td style="text-align: right;">
                 <div style="display: flex; gap: 4px; justify-content: flex-end;">
-                    <button class="btn btn-sm btn-primary" onclick="openSaleModalForCustomer('${c.id}')">+ Sale</button>
-                    <button class="btn btn-sm btn-secondary" onclick="openCustomerModal(true, '${c.id}')">Edit</button>
-                    <button class="btn btn-sm btn-danger-outline" onclick="store.deleteCustomer('${c.id}')">Delete</button>
+                    <button class="btn btn-sm btn-primary" data-action="add-sale-cust" data-id="${escapeHtml(c.id)}">+ Sale</button>
+                    <button class="btn btn-sm btn-secondary" data-action="edit-customer" data-id="${escapeHtml(c.id)}">Edit</button>
+                    <button class="btn btn-sm btn-danger-outline" data-action="delete-customer" data-id="${escapeHtml(c.id)}">Delete</button>
                 </div>
             </td>
         `;
@@ -862,8 +956,8 @@ function renderFollowups() {
             <p style="font-size: 12px; color: var(--slate-500); margin-bottom: 12px;">Reason: <strong>${escapeHtml(f.reason)}</strong></p>
             <p style="font-size: 13px; color: var(--slate-700); background: var(--slate-50); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 16px;">${escapeHtml(f.notes || 'No extra details.')}</p>
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                ${isPending ? `<button class="btn btn-sm btn-primary" onclick="store.markFollowupComplete('${f.id}')">✓ Mark Done</button>` : ''}
-                <button class="btn btn-sm btn-danger-outline" onclick="store.deleteFollowup('${f.id}')">Delete</button>
+                ${isPending ? `<button class="btn btn-sm btn-primary" data-action="complete-followup" data-id="${escapeHtml(f.id)}">✓ Mark Done</button>` : ''}
+                <button class="btn btn-sm btn-danger-outline" data-action="delete-followup" data-id="${escapeHtml(f.id)}">Delete</button>
             </div>
         `;
         grid.appendChild(card);
