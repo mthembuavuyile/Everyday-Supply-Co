@@ -660,6 +660,23 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="card-header">
+                        <div class="card-title" style="color: var(--danger-dark);">Database & Production Reset</div>
+                    </div>
+                    <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <p style="margin: 0; font-size: 13px; color: var(--slate-600);">
+                            Purge initial test data (test sales, test customers, test follow-ups) from Cloud Firestore & local cache to start fresh with real clients.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button id="purgeTestDataBtn" class="btn btn-danger-outline" style="flex: 1; min-width: 200px; justify-content: center;">
+                                <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Purge All Test Sales & Customers
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
 
         </main>

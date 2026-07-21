@@ -472,22 +472,78 @@ class ProductionHubStore {
     async deleteSale(id) {
         showConfirmDialog(
             "Delete Sale Record",
-            "Delete this sales order record?",
-            "Delete Sale",
+            "Delete this sales order record? The deducted inventory stock will be restored.",
+            "Delete & Restore Stock",
             async () => {
+                const sale = this.data.sales.find(s => s.id === id);
+
+                // Restore product stockOut locally
+                if (sale && sale.productId) {
+                    const product = this.data.products.find(p => p.id === sale.productId);
+                    if (product) {
+                        const restoredQty = parseInt(sale.quantity) || 0;
+                        product.stockOut = Math.max(0, (parseInt(product.stockOut) || 0) - restoredQty);
+                    }
+                }
+
+                // Delete sale locally
                 this.data.sales = this.data.sales.filter(s => s.id !== id);
                 this.saveLocalCache();
                 renderAllSections();
-                showToast("Sales order deleted.", "warning");
+                showToast("Sales order deleted and inventory stock restored.", "warning");
 
                 const db = fbManager.db;
                 if (db) {
                     try {
                         await db.collection('sales').doc(id).delete();
+                        if (sale && sale.productId) {
+                            const dec = firebase.firestore.FieldValue.increment(-(parseInt(sale.quantity) || 0));
+                            await db.collection('products').doc(sale.productId).update({ stockOut: dec }).catch(() => {});
+                        }
                     } catch (err) {
                         console.error("Firestore delete sale error:", err);
                     }
                 }
+            }
+        );
+    }
+
+    async purgeAllTestData() {
+        showConfirmDialog(
+            "Purge All Test Data",
+            "Are you sure you want to permanently delete all test sales orders, test customers, and test follow-up reminders from Cloud Firestore? This will reset revenue to R 0.00 so you can record real transactions.",
+            "Purge All Test Data",
+            async () => {
+                showToast("Purging test data from Firestore...", "info");
+                const db = fbManager.db;
+
+                if (db) {
+                    const cols = ['sales', 'customers', 'followups'];
+                    for (const col of cols) {
+                        try {
+                            const snap = await db.collection(col).get();
+                            const batch = db.batch();
+                            snap.forEach(doc => batch.delete(doc.ref));
+                            await batch.commit();
+                        } catch (err) {
+                            console.error(`Error purging ${col}:`, err);
+                        }
+                    }
+                }
+
+                // Reset local state
+                this.data.sales = [];
+                this.data.customers = [];
+                this.data.followups = [];
+
+                // Reset product stockOut counters back to 0
+                this.data.products.forEach(p => {
+                    p.stockOut = 0;
+                });
+
+                this.saveLocalCache();
+                renderAllSections();
+                showToast("Test data purged! Total Revenue is reset to R 0.00 and CRM is ready for real data.", "success");
             }
         );
     }
@@ -647,6 +703,14 @@ function initAuthGateway() {
             });
         }
     });
+
+    // Purge test data handler
+    const purgeBtn = byId('purgeTestDataBtn');
+    if (purgeBtn) {
+        purgeBtn.addEventListener('click', () => {
+            store.purgeAllTestData();
+        });
+    }
 }
 
 // --- RENDER SECTIONS ---
