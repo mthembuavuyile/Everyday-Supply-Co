@@ -1,25 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Everyday Supply Co. - Business CRM Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Everyday Supply Co. - Business CRM & Inventory Hub</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22><path d=%22M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z%22/><line x1=%223%22 y1=%226%22 x2=%2221%22 y2=%226%22/><path d=%22M16 10a4 4 0 0 1-8 0%22/></svg>">
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK v10 (Compat version for lightweight Vanilla JS integration) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- Everyday Supply CRM Configuration & Application Logic -->
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDK v10 (Compat Version for Vanilla JS Engine) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <!-- Config & Logic Scripts -->
     <script src="firebase-config.js"></script>
     <script src="app.js" defer></script>
 </head>
 
 <body>
 
-    <div class="app-container">
+    <!-- AUTHENTICATION OVERLAY (Single Auth Gateway) -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon-wrapper">
+                    <svg class="icon icon-lg" viewBox="0 0 24 24" style="color: var(--primary);">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <h2>Everyday Supply Hub</h2>
+                <p>Sign in to access CRM, Inventory & Admin Operations</p>
+            </div>
+            <form id="authLoginForm" class="auth-form">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="admin@everydaysupply.co.za" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+                <p id="authErrorMsg" class="auth-error-msg" style="display: none;"></p>
+                <button type="submit" class="btn btn-primary btn-full">
+                    Unlock Dashboard
+                </button>
+                <button type="button" id="googleSignInBtn" class="btn btn-secondary btn-full">
+                    <svg class="icon" viewBox="0 0 24 24" style="margin-right: 8px;">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="main-app" class="app-container" style="display: none;">
+
         <!-- Mobile Navigation Header -->
         <header class="mobile-header">
             <div class="mobile-brand">
@@ -28,8 +72,8 @@
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <path d="M16 10a4 4 0 0 1-8 0"></path>
                 </svg>
-                <span>Everyday Supply Co.</span>
-                <span class="brand-badge">CRM v1</span>
+                <span>Everyday Supply</span>
+                <span class="brand-badge">PRO HUB</span>
             </div>
             <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
                 <svg class="icon icon-lg" viewBox="0 0 24 24">
@@ -53,7 +97,7 @@
                     </svg>
                     <span>Everyday Supply</span>
                 </div>
-                <div class="brand-subtitle">Bulk Essentials Management CRM</div>
+                <div class="brand-subtitle">Business CRM & Inventory Hub</div>
             </div>
 
             <nav class="sidebar-nav">
@@ -66,7 +110,17 @@
                         <rect x="14" y="14" width="7" height="7"></rect>
                         <rect x="3" y="14" width="7" height="7"></rect>
                     </svg>
-                    <span>Dashboard</span>
+                    <span>Overview</span>
+                </div>
+
+                <div class="nav-item" data-section="stock">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    <span>Stock & Products</span>
                 </div>
 
                 <div class="nav-item" data-section="customers">
@@ -85,7 +139,7 @@
                         <circle cx="20" cy="21" r="1"></circle>
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                     </svg>
-                    <span>Sales Module</span>
+                    <span>Sales Orders</span>
                 </div>
 
                 <div class="nav-item" data-section="followups">
@@ -100,25 +154,23 @@
                     <span class="badge badge-restock" id="followupBadge" style="display: none;">0</span>
                 </div>
 
-                <div class="nav-item" data-section="stock">
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
-                        <path
-                            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                        </path>
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    </svg>
-                    <span>Stock & Inventory</span>
-                </div>
-
                 <div class="nav-item" data-section="reports">
                     <svg class="icon" viewBox="0 0 24 24">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                     </svg>
-                    <span>Reports & Weekly</span>
+                    <span>Reports & Analytics</span>
+                </div>
+
+                <div class="nav-section-title">System</div>
+
+                <div class="nav-item" data-section="settings">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Admin Profile</span>
                 </div>
             </nav>
 
@@ -129,54 +181,39 @@
                 </div>
                 <div class="user-auth-footer">
                     <div class="user-info-text">
-                        <span class="user-email-display" id="userEmailDisplay">Guest User</span>
-                        <span class="user-role-badge" id="userRoleBadge">Offline Mode</span>
+                        <span class="user-email-display" id="userEmailDisplay">Loading...</span>
+                        <span class="user-role-badge" id="userRoleBadge">Authenticated</span>
                     </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn btn-sm btn-secondary btn-icon-only"
-                            onclick="openModal('firebaseSettingsModal')" title="Firebase Connection Settings">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24">
-                                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
-                                <path
-                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                                </path>
-                            </svg>
-                        </button>
-                        <button class="btn btn-sm btn-primary btn-icon-only" id="authBtn" onclick="toggleAuthModal()"
-                            title="Sign In / Out">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24">
-                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                                <polyline points="10 17 15 12 10 7"></polyline>
-                                <line x1="15" y1="12" x2="3" y2="12"></line>
-                            </svg>
-                        </button>
-                    </div>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" id="headerLogoutBtn" title="Sign Out">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content View Container -->
+        <!-- Main View Area -->
         <main class="main-content">
 
-            <!-- 1. DASHBOARD SECTION -->
+            <!-- 1. OVERVIEW DASHBOARD -->
             <section class="page-section active" id="dashboard">
                 <div class="header-bar">
                     <div class="header-title">
                         <h1>Store Overview</h1>
-                        <p>Welcome back! Real-time metrics for Everyday Supply Co.</p>
+                        <p>Real-time production metrics for Everyday Supply Co.</p>
                     </div>
                     <div class="header-actions">
+                        <a href="../index.html" target="_blank" class="btn btn-secondary">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            View Live Storefront
+                        </a>
                         <button class="btn btn-primary" onclick="openSaleModalForCustomer()">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             Record New Sale
                         </button>
                     </div>
                 </div>
 
-                <!-- Low Stock Alert Box -->
+                <!-- Low Stock Alert Banner -->
                 <div id="dashLowStockAlerts" style="margin-bottom: 24px;"></div>
 
                 <!-- Stats Grid -->
@@ -200,9 +237,7 @@
                             <span class="stat-label">Boxes Sold</span>
                             <div class="stat-icon-wrapper">
                                 <svg class="icon" viewBox="0 0 24 24">
-                                    <path
-                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                                    </path>
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                                 </svg>
                             </div>
                         </div>
@@ -238,7 +273,7 @@
                     </div>
                 </div>
 
-                <!-- Financial Summary Grid -->
+                <!-- Financial Metrics Grid -->
                 <div class="stats-grid" style="margin-bottom: 24px;">
                     <div class="stat-card" style="border-left: 4px solid var(--success);">
                         <div class="stat-label">Total Revenue Collected</div>
@@ -289,14 +324,12 @@
                             </svg>
                             <span>+ Follow-up</span>
                         </button>
-                        <button class="quick-action-btn" onclick="switchToSection('stock')">
+                        <button class="quick-action-btn" onclick="openProductModal()">
                             <svg class="icon icon-lg" viewBox="0 0 24 24">
-                                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
-                                <path
-                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                                </path>
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            <span>Manage Stock</span>
+                            <span>+ Add Product</span>
                         </button>
                         <button class="quick-action-btn" onclick="exportSalesCSV()">
                             <svg class="icon icon-lg" viewBox="0 0 24 24">
@@ -313,8 +346,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">Recent Customer Orders</div>
-                        <button class="btn btn-sm btn-secondary" onclick="switchToSection('sales')">View All
-                            Sales</button>
+                        <button class="btn btn-sm btn-secondary" onclick="switchToSection('sales')">View All Sales</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -337,7 +369,55 @@
                 </div>
             </section>
 
-            <!-- 2. CUSTOMER MODULE SECTION -->
+            <!-- 2. STOCK & PRODUCT CATALOG -->
+            <section class="page-section" id="stock">
+                <div class="header-bar">
+                    <div class="header-title">
+                        <h1>Stock & Product Catalog</h1>
+                        <p>Manage product items, image assets, store categories, prices, and box quantities.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openProductModal()">
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            + Add New Product
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Toolbar -->
+                <div class="toolbar">
+                    <div class="search-box">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="stockSearchInput" placeholder="Search products by name or category..." oninput="renderStock()">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Unit Price</th>
+                                    <th>Opening</th>
+                                    <th>Stock In</th>
+                                    <th>Stock Out</th>
+                                    <th>Current Stock</th>
+                                    <th>Min Alert</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. CUSTOMER DATABASE -->
             <section class="page-section" id="customers">
                 <div class="header-bar">
                     <div class="header-title">
@@ -347,10 +427,7 @@
                     <div class="header-actions">
                         <button class="btn btn-secondary" onclick="exportCustomersCSV()">Export CSV</button>
                         <button class="btn btn-primary" onclick="openCustomerModal()">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             + Add New Customer
                         </button>
                     </div>
@@ -359,12 +436,8 @@
                 <!-- Toolbar Filters -->
                 <div class="toolbar">
                     <div class="search-box">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="customerSearchInput"
-                            placeholder="Search by name, phone, or area (e.g. Soweto)..." oninput="renderCustomers()">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="customerSearchInput" placeholder="Search by name, phone, or area (e.g. Soweto)..." oninput="renderCustomers()">
                     </div>
                     <div class="filter-group">
                         <select class="filter-select" id="customerFilterStatus" onchange="renderCustomers()">
@@ -389,7 +462,7 @@
                                     <th>Status</th>
                                     <th>Date Added</th>
                                     <th>Last Purchase</th>
-                                    <th style="text-align: right;">Quick Actions</th>
+                                    <th style="text-align: right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="customersTableBody">
@@ -400,7 +473,7 @@
                 </div>
             </section>
 
-            <!-- 3. SALES MODULE SECTION -->
+            <!-- 4. SALES ORDERS -->
             <section class="page-section" id="sales">
                 <div class="header-bar">
                     <div class="header-title">
@@ -410,10 +483,7 @@
                     <div class="header-actions">
                         <button class="btn btn-secondary" onclick="exportSalesCSV()">Export Sales CSV</button>
                         <button class="btn btn-primary" onclick="openSaleModalForCustomer()">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             + Record New Sale
                         </button>
                     </div>
@@ -422,12 +492,8 @@
                 <!-- Toolbar Filters -->
                 <div class="toolbar">
                     <div class="search-box">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="salesSearchInput" placeholder="Search by customer name or product..."
-                            oninput="renderSales()">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="salesSearchInput" placeholder="Search by customer name or product..." oninput="renderSales()">
                     </div>
                     <div class="filter-group">
                         <select class="filter-select" id="salesFilterPayment" onchange="renderSales()">
@@ -462,7 +528,7 @@
                 </div>
             </section>
 
-            <!-- 4. FOLLOW-UP MODULE SECTION -->
+            <!-- 5. FOLLOW-UPS -->
             <section class="page-section" id="followups">
                 <div class="header-bar">
                     <div class="header-title">
@@ -471,10 +537,7 @@
                     </div>
                     <div class="header-actions">
                         <button class="btn btn-primary" onclick="openFollowupModalForCustomer()">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             + Schedule Follow-up
                         </button>
                     </div>
@@ -491,62 +554,17 @@
                     </div>
                 </div>
 
-                <div class="grid" id="followupsGrid"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
+                <div class="grid" id="followupsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
                     <!-- Followup cards populated dynamically -->
                 </div>
             </section>
 
-            <!-- 5. STOCK MODULE SECTION -->
-            <section class="page-section" id="stock">
-                <div class="header-bar">
-                    <div class="header-title">
-                        <h1>Stock & Warehouse Inventory</h1>
-                        <p>Track box quantities, stock in/out movement, and restock minimum thresholds.</p>
-                    </div>
-                    <div class="header-actions">
-                        <button class="btn btn-primary" onclick="openProductModal()">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            + Add New Product
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Item ID</th>
-                                    <th>Product / Flavour</th>
-                                    <th>Category</th>
-                                    <th>Unit Price</th>
-                                    <th>Opening</th>
-                                    <th>Stock In</th>
-                                    <th>Stock Out</th>
-                                    <th>Current Stock</th>
-                                    <th>Min Stock</th>
-                                    <th>Status</th>
-                                    <th style="text-align: right;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stockTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 6. REPORTS SECTION -->
+            <!-- 6. REPORTS & ANALYTICS -->
             <section class="page-section" id="reports">
                 <div class="header-bar">
                     <div class="header-title">
-                        <h1>Weekly Reports & Analytics</h1>
-                        <p>Summary of sales performance, revenue, outstanding credit, and inventory movements.</p>
+                        <h1>Reports & Analytics</h1>
+                        <p>Performance calculations for Everyday Supply Co.</p>
                     </div>
                     <div class="header-actions">
                         <button class="btn btn-secondary" onclick="exportSalesCSV()">Export Full Sales CSV</button>
@@ -555,32 +573,21 @@
 
                 <div class="report-metrics-grid">
                     <div class="card">
-                        <div class="card-title"
-                            style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Boxes Delivered
-                        </div>
-                        <div class="stat-value" id="repTotalBoxes" style="margin-top: 8px; color: var(--slate-900);">0
-                        </div>
-                        <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Total boxes sold across
-                            all orders</p>
+                        <div class="card-title" style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Boxes Delivered</div>
+                        <div class="stat-value" id="repTotalBoxes" style="margin-top: 8px; color: var(--slate-900);">0</div>
+                        <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Total boxes sold across all orders</p>
                     </div>
 
                     <div class="card">
-                        <div class="card-title"
-                            style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Total Collected
-                            Revenue</div>
-                        <div class="stat-value" id="repTotalRevenue" style="margin-top: 8px; color: var(--success);">R
-                            0.00</div>
+                        <div class="card-title" style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Total Collected Revenue</div>
+                        <div class="stat-value" id="repTotalRevenue" style="margin-top: 8px; color: var(--success);">R 0.00</div>
                         <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Payments received</p>
                     </div>
 
                     <div class="card">
-                        <div class="card-title"
-                            style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Outstanding
-                            Credit</div>
-                        <div class="stat-value" id="repOutstandingCredit"
-                            style="margin-top: 8px; color: var(--warning);">R 0.00</div>
-                        <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Credit given to trusted
-                            clients</p>
+                        <div class="card-title" style="font-size: 13px; color: var(--slate-500); text-transform: uppercase;">Outstanding Credit</div>
+                        <div class="stat-value" id="repOutstandingCredit" style="margin-top: 8px; color: var(--warning);">R 0.00</div>
+                        <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Credit given to clients</p>
                     </div>
                 </div>
 
@@ -616,80 +623,99 @@
                 </div>
             </section>
 
+            <!-- 7. ADMIN PROFILE & SETTINGS -->
+            <section class="page-section" id="settings">
+                <div class="header-bar">
+                    <div class="header-title">
+                        <h1>Admin Account & System Settings</h1>
+                        <p>Manage your account preferences and store portal security.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 600px;">
+                    <div class="card-header">
+                        <div class="card-title">Account Details</div>
+                    </div>
+                    <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 16px; background: var(--slate-50); padding: 16px; border-radius: var(--radius-md);">
+                            <div style="width: 48px; height: 48px; background: var(--primary-light); color: var(--primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;" id="settingsAvatar">
+                                A
+                            </div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 16px; font-weight: 700;" id="settingsEmailDisplay">admin@everydaysupply.co.za</h4>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--slate-500);">Administrator Role (Firebase Authenticated)</p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 12px;">
+                            <a href="../index.html" target="_blank" class="btn btn-secondary" style="flex: 1; justify-content: center;">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                Open Storefront
+                            </a>
+                            <button id="settingsLogoutBtn" class="btn btn-danger" style="flex: 1; justify-content: center;">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
+    <!-- Bottom Navigation (Mobile View) -->
     <nav class="bottom-nav">
         <div class="bottom-nav-item active" data-section="dashboard">
-            <svg class="icon" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             <span>Home</span>
         </div>
+        <div class="bottom-nav-item" data-section="stock">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            <span>Stock</span>
+        </div>
         <div class="bottom-nav-item" data-section="customers">
-            <svg class="icon" viewBox="0 0 24 24">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-            </svg>
+            <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
             <span>Customers</span>
         </div>
         <div class="bottom-nav-item" data-section="sales">
-            <svg class="icon" viewBox="0 0 24 24">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
             <span>Sales</span>
         </div>
         <div class="bottom-nav-item" data-section="followups">
-            <svg class="icon" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-            </svg>
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
             <span>Follow-ups</span>
-        </div>
-        <div class="bottom-nav-item" data-section="stock">
-            <svg class="icon" viewBox="0 0 24 24">
-                <path
-                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                </path>
-            </svg>
-            <span>Stock</span>
         </div>
     </nav>
 
     <!-- MODAL DIALOGS -->
 
-    <!-- 1. Customer Modal -->
+    <!-- 1. Customer Modal (Add & Edit) -->
     <div class="modal" id="customerModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add New Customer</h2>
+                <h2 id="customerModalTitle">Add New Customer</h2>
                 <button class="modal-close" onclick="closeModal('customerModal')">&times;</button>
             </div>
             <form id="customerForm">
+                <input type="hidden" id="customerEditId" name="id">
                 <div class="modal-body">
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>Full Name *</label>
-                            <input type="text" name="name" placeholder="e.g. Sipho Ndlovu" required>
+                            <input type="text" id="custName" name="name" placeholder="e.g. Sipho Ndlovu" required>
                         </div>
                         <div class="form-group">
                             <label>Phone / WhatsApp Number *</label>
-                            <input type="tel" name="phone" placeholder="e.g. 0821234567" required>
+                            <input type="tel" id="custPhone" name="phone" placeholder="e.g. 0821234567" required>
                         </div>
                         <div class="form-group">
                             <label>Residence / Area *</label>
-                            <input type="text" name="area" placeholder="e.g. Soweto, Sandton..." required>
+                            <input type="text" id="custArea" name="area" placeholder="e.g. Soweto, Sandton..." required>
                         </div>
                         <div class="form-group full-width">
                             <label>Customer Status</label>
-                            <select name="status">
+                            <select id="custStatus" name="status">
                                 <option value="Lead">Lead (Inquired only)</option>
                                 <option value="Active" selected>Active Buyer</option>
                                 <option value="Repeat">Repeat Buyer</option>
@@ -698,20 +724,97 @@
                         </div>
                         <div class="form-group full-width">
                             <label>Notes & Delivery Preferences</label>
-                            <textarea name="notes" placeholder="Delivery instructions, bulk preferences..."></textarea>
+                            <textarea id="custNotes" name="notes" placeholder="Delivery instructions, bulk preferences..."></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        onclick="closeModal('customerModal')">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('customerModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Customer</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 2. Sale Modal -->
+    <!-- 2. Product Modal (Add & Edit - Absorbed from Manage Site & Stock) -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Add New Product to Inventory</h2>
+                <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="prodEditId" name="id">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Product / Item Name *</label>
+                            <input type="text" id="pName" name="name" placeholder="e.g. Moreson Eggs - Box 360 Eggs" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <input type="text" id="pCategory" name="category" list="category-suggestions" placeholder="e.g. Pantry, Noodles" required>
+                            <datalist id="category-suggestions">
+                                <option value="Pantry"></option>
+                                <option value="Noodles"></option>
+                                <option value="Beverages"></option>
+                                <option value="Cleaning"></option>
+                                <option value="Other"></option>
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Selling Price per Unit (ZAR) *</label>
+                            <input type="number" id="pPrice" name="price" step="0.01" placeholder="e.g. 180.00" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Product Image URL *</label>
+                            <input type="url" id="pImageUrl" name="imageUrl" placeholder="https://..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Initial Opening Stock (Boxes) *</label>
+                            <input type="number" id="pOpeningStock" name="openingStock" min="0" value="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Restock Threshold *</label>
+                            <input type="number" id="pMinStock" name="minStock" min="1" value="5" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Stock In Modal -->
+    <div class="modal" id="stockInModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Record Stock In</h2>
+                <button class="modal-close" onclick="closeModal('stockInModal')">&times;</button>
+            </div>
+            <form id="stockInForm">
+                <div class="modal-body">
+                    <input type="hidden" id="stockInProductId">
+                    <p style="margin-bottom: 16px; font-size: 14px; color: var(--slate-700);">
+                        Product: <strong id="stockInProductName" style="color: var(--slate-900);"></strong>
+                    </p>
+                    <div class="form-group">
+                        <label>Additional Stock Received (Boxes) *</label>
+                        <input type="number" id="stockInQuantity" min="1" value="10" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('stockInModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Sale Modal -->
     <div class="modal" id="saleModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -739,12 +842,11 @@
                         </div>
                         <div class="form-group">
                             <label>Quantity (Boxes) *</label>
-                            <input type="number" name="quantity" min="1" value="1" required>
+                            <input type="number" name="quantity" id="saleQuantityInput" min="1" value="1" required>
                         </div>
                         <div class="form-group">
                             <label>Selling Price per Box (ZAR)</label>
-                            <input type="number" name="unitPrice" id="saleUnitPriceInput" step="0.01"
-                                placeholder="Auto-filled from product">
+                            <input type="number" name="unitPrice" id="saleUnitPriceInput" step="0.01" placeholder="Auto-filled from product">
                         </div>
                         <div class="form-group">
                             <label>Payment Status</label>
@@ -771,7 +873,7 @@
         </div>
     </div>
 
-    <!-- 3. Follow-up Modal -->
+    <!-- 5. Follow-up Modal -->
     <div class="modal" id="followupModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -807,210 +909,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        onclick="closeModal('followupModal')">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('followupModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Schedule Reminder</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 4. Stock In Modal -->
-    <div class="modal" id="stockInModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Record Stock In</h2>
-                <button class="modal-close" onclick="closeModal('stockInModal')">&times;</button>
-            </div>
-            <form id="stockInForm">
-                <div class="modal-body">
-                    <input type="hidden" id="stockInProductId">
-                    <p style="margin-bottom: 16px; font-size: 14px; color: var(--slate-700);">
-                        Product: <strong id="stockInProductName" style="color: var(--slate-900);"></strong>
-                    </p>
-                    <div class="form-group">
-                        <label>Additional Stock Received (Boxes) *</label>
-                        <input type="number" id="stockInQuantity" min="1" value="10" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('stockInModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Stock</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 5. New Product Modal -->
-    <div class="modal" id="productModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Add New Product to Inventory</h2>
-                <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
-            </div>
-            <form id="productForm">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>Product / Item Name *</label>
-                            <input type="text" name="name" placeholder="e.g. Moreson Eggs - Box 360 Eggs" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Category *</label>
-                            <select name="category" required>
-                                <option value="Pantry" selected>Pantry</option>
-                                <option value="Noodles">Noodles</option>
-                                <option value="Beverages">Beverages</option>
-                                <option value="Cleaning">Cleaning</option>
-                                <option value="Other">Other Wholesale</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Selling Price per Unit (ZAR) *</label>
-                            <input type="number" name="price" step="0.01" placeholder="e.g. 180.00" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Initial Opening Stock (Boxes) *</label>
-                            <input type="number" name="openingStock" min="0" value="50" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Minimum Restock Alert Threshold *</label>
-                            <input type="number" name="minStock" min="1" value="15" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Product</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 6. Edit Customer Modal -->
-    <div class="modal" id="editCustomerModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Edit Customer Details</h2>
-                <button class="modal-close" onclick="closeModal('editCustomerModal')">&times;</button>
-            </div>
-            <form id="editCustomerForm">
-                <input type="hidden" name="id" id="editCustomerId">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>Full Name *</label>
-                            <input type="text" name="name" id="editCustomerName" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone / WhatsApp Number *</label>
-                            <input type="tel" name="phone" id="editCustomerPhone" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Residence / Area *</label>
-                            <input type="text" name="area" id="editCustomerArea" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Customer Status</label>
-                            <select name="status" id="editCustomerStatus">
-                                <option value="Lead">Lead</option>
-                                <option value="Active">Active Buyer</option>
-                                <option value="Repeat">Repeat Buyer</option>
-                                <option value="Inactive">Inactive</option>
-                            </select>
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Notes & Delivery Preferences</label>
-                            <textarea name="notes" id="editCustomerNotes"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        onclick="closeModal('editCustomerModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Customer</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 7. Authentication Modal -->
-    <div class="modal" id="authModal">
-        <div class="modal-content" style="max-width: 420px;">
-            <div class="modal-header">
-                <h2 id="authModalTitle">Sign In to Everyday CRM</h2>
-                <button class="modal-close" onclick="closeModal('authModal')">&times;</button>
-            </div>
-            <form id="authForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" id="authEmail" placeholder="admin@everydaysupply.co.za" autocomplete="email"
-                            required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password"
-                            required>
-                    </div>
-                </div>
-                <div class="modal-footer" style="flex-direction: column; gap: 8px;">
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
-                    <button type="button" class="btn btn-secondary" style="width: 100%;"
-                        onclick="handleGoogleSignIn()">Sign in with Google</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 8. Firebase Settings Modal -->
-    <div class="modal" id="firebaseSettingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Firebase Cloud Settings</h2>
-                <button class="modal-close" onclick="closeModal('firebaseSettingsModal')">&times;</button>
-            </div>
-            <form id="firebaseSettingsForm">
-                <div class="modal-body">
-                    <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">
-                        Paste your Firebase Web App configuration below to connect real-time multi-device cloud database sync.
-                    </p>
-                    <div class="form-group full-width" style="margin-bottom: 16px;">
-                        <label>Paste Firebase Config Snippet (JSON or JS Object from Firebase Console)</label>
-                        <textarea id="cfgPasteBox" rows="4" placeholder="const firebaseConfig = { apiKey: &quot;AIza...&quot;, authDomain: &quot;...&quot;, projectId: &quot;...&quot; };" style="font-family: monospace; font-size: 12px;"></textarea>
-                    </div>
-                    <div style="font-size: 12px; color: var(--slate-500); font-weight: 600; margin-bottom: 12px;">OR Edit Individual Fields:</div>
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>API Key (apiKey)</label>
-                            <input type="text" id="cfgApiKey" placeholder="AIzaSy...">
-                        </div>
-                        <div class="form-group">
-                            <label>Auth Domain (authDomain)</label>
-                            <input type="text" id="cfgAuthDomain" placeholder="project-id.firebaseapp.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Project ID (projectId)</label>
-                            <input type="text" id="cfgProjectId" placeholder="project-id">
-                        </div>
-                        <div class="form-group">
-                            <label>Storage Bucket (storageBucket)</label>
-                            <input type="text" id="cfgStorageBucket" placeholder="project-id.appspot.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Messaging Sender ID</label>
-                            <input type="text" id="cfgMessagingSenderId" placeholder="1234567890">
-                        </div>
-                        <div class="form-group full-width">
-                            <label>App ID (appId)</label>
-                            <input type="text" id="cfgAppId" placeholder="1:1234567890:web:abcdef...">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="resetFirebaseConfig()">Reset to Demo
-                        Defaults</button>
-                    <button type="submit" class="btn btn-primary">Save & Connect Cloud</button>
                 </div>
             </form>
         </div>

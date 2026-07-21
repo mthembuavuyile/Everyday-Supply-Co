@@ -15,40 +15,12 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 class FirebaseManager {
     constructor() {
-        this.configKey = 'everyday_supply_firebase_config';
-        this.config = this.loadConfig();
+        this.config = DEFAULT_FIREBASE_CONFIG;
         this.app = null;
         this.db = null;
         this.auth = null;
         this.isInitialized = false;
         this.currentUser = null;
-    }
-
-    loadConfig() {
-        const stored = localStorage.getItem(this.configKey);
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                if (parsed && parsed.apiKey && !parsed.apiKey.includes('DemoConfigKey')) {
-                    return parsed;
-                }
-            } catch (e) {
-                console.error("Error reading saved Firebase config:", e);
-            }
-        }
-        return DEFAULT_FIREBASE_CONFIG;
-    }
-
-    saveConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        localStorage.setItem(this.configKey, JSON.stringify(this.config));
-        location.reload(); // Reload to initialize with new keys
-    }
-
-    resetConfig() {
-        localStorage.removeItem(this.configKey);
-        this.config = DEFAULT_FIREBASE_CONFIG;
-        location.reload();
     }
 
     init() {

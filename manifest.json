@@ -2,7 +2,7 @@
   "name": "Everyday Supply Co Admin",
   "short_name": "Stock Pro",
   "description": "Manage Everyday-Supply-Co inventory on the go.",
-  "start_url": "/manage-site26.html",
+  "start_url": "/crm/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#059669",
