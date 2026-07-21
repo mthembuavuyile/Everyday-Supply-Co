@@ -928,7 +928,8 @@ body {
         transform: translateX(-100%);
     }
 
-    .sidebar.open {
+    .sidebar.open,
+    .sidebar.active {
         transform: translateX(0);
     }
 
