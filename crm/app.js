@@ -88,6 +88,7 @@ class ProductionHubStore {
         }
 
         const db = fbManager.db;
+        if (!db) return;
         const collections = ['products', 'customers', 'sales', 'followups'];
 
         // Clear existing listeners
@@ -95,26 +96,29 @@ class ProductionHubStore {
         this.unsubscribers = [];
 
         collections.forEach(col => {
-            const unsub = db.collection(col).onSnapshot(snapshot => {
-                const isLive = snapshot.metadata && !snapshot.metadata.fromCache;
-                this.isCloudConnected = isLive;
-                this.updateConnBadge(isLive, isLive ? "Cloud Syncing" : "Local Offline");
+            try {
+                const unsub = db.collection(col).onSnapshot(snapshot => {
+                    const isLive = snapshot.metadata && !snapshot.metadata.fromCache;
+                    this.isCloudConnected = isLive;
+                    this.updateConnBadge(isLive, isLive ? "Cloud Syncing" : "Local Offline");
 
-                const items = [];
-                snapshot.forEach(doc => {
-                    items.push({ id: doc.id, ...doc.data() });
+                    const items = [];
+                    snapshot.forEach(doc => {
+                        items.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    this.data[col] = items;
+                    this.saveLocalCache();
+                    renderAllSections();
+                }, err => {
+                    console.warn(`Firestore sync note for ${col}:`, err.message);
+                    this.updateConnBadge(false, "Local Offline");
                 });
 
-                // Update strictly with live Firestore documents (Empty if 0 records)
-                this.data[col] = items;
-                this.saveLocalCache();
-                renderAllSections();
-            }, err => {
-                console.warn(`Firestore sync note for ${col}:`, err.message);
-                this.updateConnBadge(false, "Local Offline");
-            });
-
-            this.unsubscribers.push(unsub);
+                this.unsubscribers.push(unsub);
+            } catch (err) {
+                console.warn(`Failed to attach listener for ${col}:`, err);
+            }
         });
     }
 
@@ -162,6 +166,20 @@ class ProductionHubStore {
             payload.stockOut = 0;
         }
 
+        // Optimistically update local data
+        if (isEdit) {
+            const index = this.data.products.findIndex(p => p.id === docId);
+            if (index !== -1) {
+                this.data.products[index] = { ...this.data.products[index], ...payload };
+            }
+        } else {
+            this.data.products.push({ id: docId, ...payload });
+        }
+        this.saveLocalCache();
+        renderAllSections();
+
+        showToast(isEdit ? "Product updated." : "Product added to catalog.", "success");
+
         if (db) {
             try {
                 if (isEdit) {
@@ -169,9 +187,9 @@ class ProductionHubStore {
                 } else {
                     await db.collection('products').doc(docId).set(payload);
                 }
-                showToast(isEdit ? "Product updated." : "Product added to catalog.", "success");
             } catch (err) {
-                showToast("Error saving product: " + err.message, "error");
+                console.error("Firestore save product error:", err);
+                showToast("Cloud sync warning: " + err.message, "warning");
             }
         }
     }
@@ -180,31 +198,41 @@ class ProductionHubStore {
         const prod = this.data.products.find(p => p.id === id);
         if (!confirm(`Permanently delete product "${prod ? prod.name : id}"?`)) return;
 
+        // Optimistically remove locally
+        this.data.products = this.data.products.filter(p => p.id !== id);
+        this.saveLocalCache();
+        renderAllSections();
+        showToast("Product deleted.", "warning");
+
         const db = fbManager.db;
         if (db) {
             try {
                 await db.collection('products').doc(id).delete();
-                showToast("Product deleted.", "warning");
             } catch (err) {
-                showToast("Error deleting: " + err.message, "error");
+                console.error("Firestore delete error:", err);
             }
         }
     }
 
     async addStockIn(productId, additionalQty) {
-        const db = fbManager.db;
-        if (!db) return;
-
         const prod = this.data.products.find(p => p.id === productId);
         if (!prod) return;
 
         const newStockIn = (parseInt(prod.stockIn) || 0) + parseInt(additionalQty);
 
-        try {
-            await db.collection('products').doc(productId).update({ stockIn: newStockIn });
-            showToast(`Added ${additionalQty} boxes to stock for ${prod.name}.`, "success");
-        } catch (err) {
-            showToast("Failed to update stock: " + err.message, "error");
+        // Optimistically update locally
+        prod.stockIn = newStockIn;
+        this.saveLocalCache();
+        renderAllSections();
+        showToast(`Added ${additionalQty} boxes to stock for ${prod.name}.`, "success");
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('products').doc(productId).update({ stockIn: newStockIn });
+            } catch (err) {
+                console.error("Firestore stock update error:", err);
+            }
         }
     }
 
@@ -232,6 +260,20 @@ class ProductionHubStore {
             payload.lastPurchase = '';
         }
 
+        // Optimistically update local data
+        if (isEdit) {
+            const index = this.data.customers.findIndex(c => c.id === docId);
+            if (index !== -1) {
+                this.data.customers[index] = { ...this.data.customers[index], ...payload };
+            }
+        } else {
+            this.data.customers.push({ id: docId, ...payload });
+        }
+        this.saveLocalCache();
+        renderAllSections();
+
+        showToast(isEdit ? "Customer details updated." : `Customer ${payload.name} added.`, "success");
+
         if (db) {
             try {
                 if (isEdit) {
@@ -239,9 +281,9 @@ class ProductionHubStore {
                 } else {
                     await db.collection('customers').doc(docId).set(payload);
                 }
-                showToast(isEdit ? "Customer details updated." : `Customer ${payload.name} added.`, "success");
             } catch (err) {
-                showToast("Error saving customer: " + err.message, "error");
+                console.error("Firestore save customer error:", err);
+                showToast("Cloud sync warning: " + err.message, "warning");
             }
         }
     }
@@ -250,13 +292,18 @@ class ProductionHubStore {
         const cust = this.data.customers.find(c => c.id === id);
         if (!confirm(`Delete customer record "${cust ? cust.name : id}"?`)) return;
 
+        // Optimistically remove locally
+        this.data.customers = this.data.customers.filter(c => c.id !== id);
+        this.saveLocalCache();
+        renderAllSections();
+        showToast("Customer record deleted.", "warning");
+
         const db = fbManager.db;
         if (db) {
             try {
                 await db.collection('customers').doc(id).delete();
-                showToast("Customer record deleted.", "warning");
             } catch (err) {
-                showToast("Error deleting customer: " + err.message, "error");
+                console.error("Firestore delete customer error:", err);
             }
         }
     }
@@ -268,7 +315,6 @@ class ProductionHubStore {
 
     async addSale(saleData) {
         const db = fbManager.db;
-        if (!db) return;
 
         const saleId = 'SALE-' + Date.now();
         const quantity = parseInt(saleData.quantity) || 1;
@@ -279,6 +325,7 @@ class ProductionHubStore {
         const product = this.data.products.find(p => p.id === saleData.productId);
 
         const payload = {
+            id: saleId,
             date: saleData.date || getTodayISOString(),
             customerId: saleData.customerId,
             customerName: customer ? customer.name : 'Unknown Customer',
@@ -292,43 +339,66 @@ class ProductionHubStore {
             createdAt: new Date().toISOString()
         };
 
-        try {
-            // 1. Record Sale
-            await db.collection('sales').doc(saleId).set(payload);
+        // Optimistically update local data
+        this.data.sales.push(payload);
 
-            // 2. Auto-deduct stock from product stockOut
-            if (product) {
-                const currentStockOut = parseInt(product.stockOut) || 0;
-                await db.collection('products').doc(product.id).update({
-                    stockOut: currentStockOut + quantity
-                });
+        if (product) {
+            product.stockOut = (parseInt(product.stockOut) || 0) + quantity;
+        }
+
+        if (customer) {
+            customer.lastPurchase = payload.date;
+            if (customer.status === 'Lead' || customer.status === 'Inactive') {
+                customer.status = 'Active';
             }
+        }
 
-            // 3. Update customer lastPurchase and status
-            if (customer) {
-                const newStatus = (customer.status === 'Lead' || customer.status === 'Inactive') ? 'Active' : customer.status;
-                await db.collection('customers').doc(customer.id).update({
-                    lastPurchase: payload.date,
-                    status: newStatus
-                });
+        this.saveLocalCache();
+        renderAllSections();
+        showToast(`Sale recorded successfully! ${quantity} boxes deducted from inventory.`, "success");
+
+        if (db) {
+            try {
+                // 1. Record Sale
+                await db.collection('sales').doc(saleId).set(payload);
+
+                // 2. Auto-deduct stock from product stockOut
+                if (product) {
+                    const currentStockOut = parseInt(product.stockOut) || 0;
+                    await db.collection('products').doc(product.id).update({
+                        stockOut: currentStockOut
+                    });
+                }
+
+                // 3. Update customer lastPurchase and status
+                if (customer) {
+                    await db.collection('customers').doc(customer.id).update({
+                        lastPurchase: payload.date,
+                        status: customer.status
+                    });
+                }
+            } catch (err) {
+                console.error("Firestore add sale error:", err);
             }
-
-            showToast(`Sale recorded successfully! ${quantity} boxes deducted from inventory.`, "success");
-        } catch (err) {
-            showToast("Error recording sale: " + err.message, "error");
         }
     }
 
     async deleteSale(id) {
-        const db = fbManager.db;
-        if (!db) return;
         if (!confirm("Delete this sales order record?")) return;
 
-        try {
-            await db.collection('sales').doc(id).delete();
-            showToast("Sales order deleted.", "warning");
-        } catch (err) {
-            showToast("Error deleting sale: " + err.message, "error");
+        // Optimistically remove locally
+        this.data.sales = this.data.sales.filter(s => s.id !== id);
+        this.saveLocalCache();
+        renderAllSections();
+        showToast("Sales order deleted.", "warning");
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('sales').doc(id).delete();
+            } catch (err) {
+                console.error("Firestore delete sale error:", err);
+            }
         }
     }
 
@@ -339,12 +409,11 @@ class ProductionHubStore {
 
     async saveFollowup(folData) {
         const db = fbManager.db;
-        if (!db) return;
-
         const folId = 'FOL-' + Date.now();
         const customer = this.data.customers.find(c => c.id === folData.customerId);
 
         const payload = {
+            id: folId,
             date: folData.date || getTodayISOString(),
             customerId: folData.customerId,
             customerName: customer ? customer.name : 'Customer',
@@ -355,36 +424,55 @@ class ProductionHubStore {
             createdAt: new Date().toISOString()
         };
 
-        try {
-            await db.collection('followups').doc(folId).set(payload);
-            showToast("Follow-up reminder scheduled.", "success");
-        } catch (err) {
-            showToast("Error scheduling follow-up: " + err.message, "error");
+        // Optimistically save locally
+        this.data.followups.push(payload);
+        this.saveLocalCache();
+        renderAllSections();
+        showToast("Follow-up reminder scheduled.", "success");
+
+        if (db) {
+            try {
+                await db.collection('followups').doc(folId).set(payload);
+            } catch (err) {
+                console.error("Firestore save followup error:", err);
+            }
         }
     }
 
     async markFollowupComplete(id) {
-        const db = fbManager.db;
-        if (!db) return;
-
-        try {
-            await db.collection('followups').doc(id).update({ status: 'Completed' });
+        const fol = this.data.followups.find(f => f.id === id);
+        if (fol) {
+            fol.status = 'Completed';
+            this.saveLocalCache();
+            renderAllSections();
             showToast("Follow-up marked as completed.", "success");
-        } catch (err) {
-            showToast("Error updating follow-up: " + err.message, "error");
+        }
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('followups').doc(id).update({ status: 'Completed' });
+            } catch (err) {
+                console.error("Firestore update followup error:", err);
+            }
         }
     }
 
     async deleteFollowup(id) {
-        const db = fbManager.db;
-        if (!db) return;
         if (!confirm("Delete this follow-up reminder?")) return;
 
-        try {
-            await db.collection('followups').doc(id).delete();
-            showToast("Follow-up deleted.", "warning");
-        } catch (err) {
-            showToast("Error deleting follow-up: " + err.message, "error");
+        this.data.followups = this.data.followups.filter(f => f.id !== id);
+        this.saveLocalCache();
+        renderAllSections();
+        showToast("Follow-up deleted.", "warning");
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('followups').doc(id).delete();
+            } catch (err) {
+                console.error("Firestore delete followup error:", err);
+            }
         }
     }
 }

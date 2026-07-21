@@ -20,10 +20,15 @@ class FirebaseManager {
         this.db = null;
         this.auth = null;
         this.isInitialized = false;
+        this.persistenceAttempted = false;
         this.currentUser = null;
     }
 
     init() {
+        if (this.isInitialized && this.app && this.db) {
+            return true;
+        }
+
         if (typeof firebase === 'undefined') {
             console.warn("Firebase SDK not loaded. Falling back to local offline storage.");
             return false;
@@ -39,17 +44,22 @@ class FirebaseManager {
             this.db = firebase.firestore();
             this.auth = firebase.auth();
 
-            // Enable offline persistence without deprecation warnings
-            if (typeof this.db.enableIndexedDbPersistence === 'function') {
-                this.db.enableIndexedDbPersistence({ synchronizeTabs: true }).catch(err => {
-                    if (err.code === 'failed-precondition') {
-                        console.warn('Multiple tabs open, offline persistence enabled in primary tab only.');
-                    } else if (err.code === 'unimplemented') {
-                        console.warn('Browser does not support offline persistence.');
-                    }
-                });
-            } else if (typeof this.db.enablePersistence === 'function') {
-                this.db.enablePersistence().catch(() => {});
+            // Enable offline persistence only once during initial setup
+            if (!this.persistenceAttempted) {
+                this.persistenceAttempted = true;
+                if (typeof this.db.enableIndexedDbPersistence === 'function') {
+                    this.db.enableIndexedDbPersistence({ synchronizeTabs: true }).catch(err => {
+                        if (err.code === 'failed-precondition') {
+                            console.warn('Multiple tabs open, offline persistence enabled in primary tab only.');
+                        } else if (err.code === 'unimplemented') {
+                            console.warn('Browser does not support offline persistence.');
+                        } else {
+                            console.warn('Firestore persistence note:', err.message);
+                        }
+                    });
+                } else if (typeof this.db.enablePersistence === 'function') {
+                    this.db.enablePersistence().catch(() => {});
+                }
             }
 
             this.isInitialized = true;
