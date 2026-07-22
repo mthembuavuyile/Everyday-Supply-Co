@@ -113,6 +113,8 @@ document.addEventListener('click', (e) => {
     if (action === 'stock-in') {
         const prod = store.getProducts().find(p => p.id === id);
         if (prod) openStockInModal(prod.id, prod.name);
+    } else if (action === 'correct-stock') {
+        openStockCorrectionModal(id);
     } else if (action === 'edit-product') {
         openProductModal(true, id);
     } else if (action === 'delete-product') {
@@ -335,6 +337,42 @@ class ProductionHubStore {
                 await db.collection('products').doc(productId).update({ stockIn: inc });
             } catch (err) {
                 console.error("Firestore stock update error:", err);
+            }
+        }
+    }
+
+    async correctStock(productId, newOpening, newStockIn, newStockOut) {
+        const prod = this.data.products.find(p => p.id === productId);
+        if (!prod) return;
+
+        const opening = parseInt(newOpening) || 0;
+        const stockIn = parseInt(newStockIn) || 0;
+        const stockOut = parseInt(newStockOut) || 0;
+
+        // Optimistically update locally
+        prod.openingStock = opening;
+        prod.stockIn = stockIn;
+        prod.stockOut = stockOut;
+        prod.updatedAt = new Date().toISOString();
+
+        this.saveLocalCache();
+        renderAllSections();
+
+        const newCurrent = opening + stockIn - stockOut;
+        showToast(`Stock corrected for ${prod.name}. Current stock is now ${newCurrent} boxes.`, "success");
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('products').doc(productId).update({
+                    openingStock: opening,
+                    stockIn: stockIn,
+                    stockOut: stockOut,
+                    updatedAt: prod.updatedAt
+                });
+            } catch (err) {
+                console.error("Firestore stock correction error:", err);
+                showToast("Cloud sync warning: " + err.message, "warning");
             }
         }
     }
@@ -890,8 +928,9 @@ function renderStock() {
             <td>${p.minStock}</td>
             <td><span class="badge ${p.needsRestock ? 'badge-restock' : 'badge-instock'}">${p.needsRestock ? 'LOW STOCK' : 'In Stock'}</span></td>
             <td style="text-align: right;">
-                <div style="display: flex; gap: 4px; justify-content: flex-end;">
+                <div style="display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap;">
                     <button class="btn btn-sm btn-secondary" data-action="stock-in" data-id="${escapeHtml(p.id)}">+ Stock In</button>
+                    <button class="btn btn-sm btn-secondary" data-action="correct-stock" data-id="${escapeHtml(p.id)}" title="Edit stock numbers directly">✏️ Correct</button>
                     <button class="btn btn-sm btn-secondary" data-action="edit-product" data-id="${escapeHtml(p.id)}">Edit</button>
                     <button class="btn btn-sm btn-danger-outline" data-action="delete-product" data-id="${escapeHtml(p.id)}">Delete</button>
                 </div>
@@ -1156,6 +1195,33 @@ function openStockInModal(id, name) {
     openModal('stockInModal');
 }
 
+// Stock Correction Modal
+function openStockCorrectionModal(productId) {
+    const prod = store.getProducts().find(p => p.id === productId);
+    if (!prod) return;
+
+    if (byId('stockCorrProductId')) byId('stockCorrProductId').value = prod.id;
+    if (byId('stockCorrProductName')) byId('stockCorrProductName').textContent = prod.name;
+    if (byId('stockCorrOpening')) byId('stockCorrOpening').value = prod.openingStock;
+    if (byId('stockCorrIn')) byId('stockCorrIn').value = prod.stockIn;
+    if (byId('stockCorrOut')) byId('stockCorrOut').value = prod.stockOut;
+
+    updateStockCorrectionPreview();
+    openModal('stockCorrectionModal');
+}
+
+function updateStockCorrectionPreview() {
+    const opening = parseInt(byId('stockCorrOpening')?.value) || 0;
+    const stockIn = parseInt(byId('stockCorrIn')?.value) || 0;
+    const stockOut = parseInt(byId('stockCorrOut')?.value) || 0;
+    const result = opening + stockIn - stockOut;
+    const preview = byId('stockCorrPreview');
+    if (preview) {
+        preview.textContent = result + ' boxes';
+        preview.style.color = result < 0 ? 'var(--danger)' : 'var(--primary)';
+    }
+}
+
 // Customer Modal
 function openCustomerModal(isEdit = false, id = null) {
     const form = byId('customerForm');
@@ -1278,6 +1344,26 @@ function initForms() {
             const qty = byId('stockInQuantity').value;
             await store.addStockIn(id, qty);
             closeModal('stockInModal');
+        });
+    }
+
+    // Stock Correction Form
+    const stockCorrForm = byId('stockCorrectionForm');
+    if (stockCorrForm) {
+        stockCorrForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = byId('stockCorrProductId').value;
+            const opening = byId('stockCorrOpening').value;
+            const stockIn = byId('stockCorrIn').value;
+            const stockOut = byId('stockCorrOut').value;
+            await store.correctStock(id, opening, stockIn, stockOut);
+            closeModal('stockCorrectionModal');
+        });
+
+        // Live preview listeners
+        ['stockCorrOpening', 'stockCorrIn', 'stockCorrOut'].forEach(fieldId => {
+            const el = byId(fieldId);
+            if (el) el.addEventListener('input', updateStockCorrectionPreview);
         });
     }
 
