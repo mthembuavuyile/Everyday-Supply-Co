@@ -242,15 +242,15 @@ byId('checkout-btn').addEventListener('click', async () => {
       name: nameInput,
       phone: phoneInput,
       area: addressInput,
-      status: 'Active',
+      status: 'Lead',
       dateAdded: today,
-      lastPurchase: today,
-      notes: 'Web Storefront Order',
+      lastPurchase: '',
+      notes: 'Web Storefront Inquiry',
       updatedAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'customers', custId), custPayload);
 
-    // 2. Sync Sales Orders & Deduct Stock in Firestore
+    // 2. Sync Sales Orders & Reserve Stock in Firestore
     for (let index = 0; index < cart.length; index++) {
       const item = cart[index];
       const saleId = 'SALE-' + Date.now() + '-' + index;
@@ -266,13 +266,13 @@ byId('checkout-btn').addEventListener('click', async () => {
         quantity: item.qty || 1,
         unitPrice: item.price || 0,
         total: totalAmount,
-        paymentStatus: 'Paid',
-        deliveryStatus: 'Processing',
+        paymentStatus: 'Pending',
+        deliveryStatus: 'Pending WhatsApp',
         createdAt: new Date().toISOString()
       };
       await setDoc(doc(db, 'sales', saleId), salePayload);
 
-      // Deduct stock in Firestore
+      // Reserve stock in Firestore
       if (item.id) {
         try {
           await updateDoc(doc(db, 'products', item.id), {

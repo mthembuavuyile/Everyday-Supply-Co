@@ -512,7 +512,9 @@
                         <select class="filter-select" id="salesFilterPayment" onchange="renderSales()">
                             <option value="all">All Payment Statuses</option>
                             <option value="Paid">Paid</option>
+                            <option value="Pending">Pending (Unconfirmed)</option>
                             <option value="Credit">Credit (Outstanding)</option>
+                            <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -531,6 +533,7 @@
                                     <th>Total Amount</th>
                                     <th>Payment Status</th>
                                     <th>Delivery Status</th>
+                                    <th style="text-align: right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="salesTableBody">
@@ -1012,6 +1015,43 @@
                 <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">Cancel</button>
                 <button type="button" class="btn btn-primary" id="importConfirmBtn" onclick="confirmCSVImport()" disabled>Import All</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Sale Status Modal -->
+    <div class="modal" id="editSaleStatusModal">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header">
+                <h2>Update Order Status</h2>
+                <button class="modal-close" onclick="closeModal('editSaleStatusModal')">&times;</button>
+            </div>
+            <form id="editSaleStatusForm">
+                <input type="hidden" id="editSaleId">
+                <div class="modal-body">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; font-size: 13px;">Payment Status *</label>
+                        <select id="editSalePaymentStatus" class="filter-select" style="width: 100%; margin-top: 4px;" required>
+                            <option value="Paid">Paid (Confirmed Revenue)</option>
+                            <option value="Pending">Pending (Unconfirmed Inquiry)</option>
+                            <option value="Credit">Credit (Outstanding Balance)</option>
+                            <option value="Cancelled">Cancelled (Restore Inventory Stock)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 13px;">Delivery Status *</label>
+                        <select id="editSaleDeliveryStatus" class="filter-select" style="width: 100%; margin-top: 4px;" required>
+                            <option value="Pending WhatsApp">Pending WhatsApp</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editSaleStatusModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Order Status</button>
+                </div>
+            </form>
         </div>
     </div>
 

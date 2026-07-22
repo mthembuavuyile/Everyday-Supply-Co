@@ -129,6 +129,13 @@ document.addEventListener('click', (e) => {
         store.markFollowupComplete(id);
     } else if (action === 'delete-followup') {
         store.deleteFollowup(id);
+    } else if (action === 'mark-sale-paid') {
+        const sale = store.getSales().find(s => s.id === id);
+        if (sale) store.updateSaleStatus(id, 'Paid', 'Processing');
+    } else if (action === 'edit-sale-status') {
+        openEditSaleStatusModal(id);
+    } else if (action === 'delete-sale') {
+        store.deleteSale(id);
     }
 });
 
@@ -528,6 +535,74 @@ class ProductionHubStore {
         }
     }
 
+    async updateSaleStatus(saleId, paymentStatus, deliveryStatus) {
+        const sale = this.data.sales.find(s => s.id === saleId);
+        if (!sale) return;
+
+        const oldPaymentStatus = sale.paymentStatus;
+        const oldDeliveryStatus = sale.deliveryStatus;
+
+        sale.paymentStatus = paymentStatus;
+        sale.deliveryStatus = deliveryStatus;
+
+        // Stock adjustment logic when status changes to/from Cancelled
+        const product = sale.productId ? this.data.products.find(p => p.id === sale.productId) : null;
+        const qty = parseInt(sale.quantity) || 0;
+
+        let stockDelta = 0;
+        if (oldPaymentStatus !== 'Cancelled' && paymentStatus === 'Cancelled') {
+            // Restore stock if order cancelled
+            stockDelta = -qty;
+            if (product) {
+                product.stockOut = Math.max(0, (parseInt(product.stockOut) || 0) - qty);
+            }
+        } else if (oldPaymentStatus === 'Cancelled' && paymentStatus !== 'Cancelled') {
+            // Re-deduct stock if order un-cancelled
+            stockDelta = qty;
+            if (product) {
+                product.stockOut = (parseInt(product.stockOut) || 0) + qty;
+            }
+        }
+
+        // Update customer status to Active/Repeat when marked Paid
+        const customer = sale.customerId ? this.data.customers.find(c => c.id === sale.customerId) : null;
+        if (paymentStatus === 'Paid' && customer) {
+            customer.lastPurchase = getTodayISOString();
+            if (customer.status === 'Lead' || customer.status === 'Inactive') {
+                customer.status = 'Active';
+            }
+        }
+
+        this.saveLocalCache();
+        renderAllSections();
+        showToast(`Order status updated to ${paymentStatus} (${deliveryStatus}).`, "success");
+
+        const db = fbManager.db;
+        if (db) {
+            try {
+                await db.collection('sales').doc(saleId).update({
+                    paymentStatus: paymentStatus,
+                    deliveryStatus: deliveryStatus,
+                    updatedAt: new Date().toISOString()
+                });
+
+                if (product && stockDelta !== 0) {
+                    const inc = firebase.firestore.FieldValue.increment(stockDelta);
+                    await db.collection('products').doc(product.id).update({ stockOut: inc }).catch(() => {});
+                }
+
+                if (paymentStatus === 'Paid' && customer) {
+                    await db.collection('customers').doc(customer.id).update({
+                        lastPurchase: customer.lastPurchase,
+                        status: customer.status
+                    }).catch(() => {});
+                }
+            } catch (err) {
+                console.error("Firestore updateSaleStatus error:", err);
+            }
+        }
+    }
+
     async deleteSale(id) {
         showConfirmDialog(
             "Delete Sale Record",
@@ -784,6 +859,21 @@ function renderAllSections() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function getPaymentBadgeClass(status) {
+    if (status === 'Paid') return 'badge-paid';
+    if (status === 'Pending') return 'badge-pending';
+    if (status === 'Credit') return 'badge-credit';
+    if (status === 'Cancelled') return 'badge-cancelled';
+    return 'badge-pending';
+}
+
+function getDeliveryBadgeClass(status) {
+    if (status === 'Delivered') return 'badge-delivered';
+    if (status === 'Processing') return 'badge-active';
+    if (status === 'Cancelled') return 'badge-cancelled';
+    return 'badge-pending';
+}
+
 // 1. DASHBOARD
 function renderDashboard() {
     const products = store.getProducts();
@@ -794,7 +884,9 @@ function renderDashboard() {
     // Calculated metrics
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(c => c.status === 'Active' || c.status === 'Repeat').length;
-    const boxesSold = sales.reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);
+    const boxesSold = sales
+        .filter(s => s.paymentStatus === 'Paid')
+        .reduce((sum, s) => sum + (parseInt(s.quantity) || 0), 0);
     const totalStock = products.reduce((sum, p) => sum + p.currentStock, 0);
 
     const todayISO = getTodayISOString();
@@ -868,6 +960,7 @@ function renderDashboard() {
 
         recentSales.forEach(s => {
             const tr = document.createElement('tr');
+            const payBadgeClass = getPaymentBadgeClass(s.paymentStatus);
             tr.innerHTML = `
                 <td><strong>${escapeHtml(s.id)}</strong></td>
                 <td>${escapeHtml(s.date)}</td>
@@ -875,7 +968,7 @@ function renderDashboard() {
                 <td>${escapeHtml(s.productName)}</td>
                 <td>${s.quantity}</td>
                 <td><strong>${moneyZA(s.total)}</strong></td>
-                <td><span class="badge ${s.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-credit'}">${escapeHtml(s.paymentStatus)}</span></td>
+                <td><span class="badge ${payBadgeClass}">${escapeHtml(s.paymentStatus)}</span></td>
             `;
             recentTable.appendChild(tr);
         });
@@ -1019,7 +1112,7 @@ function renderSales() {
     if (filtered.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="9" style="text-align: center; color: var(--slate-400); padding: 32px;">
+                <td colspan="10" style="text-align: center; color: var(--slate-400); padding: 32px;">
                     No sales records found.
                 </td>
             </tr>
@@ -1029,6 +1122,10 @@ function renderSales() {
 
     filtered.forEach(s => {
         const tr = document.createElement('tr');
+        const payBadgeClass = getPaymentBadgeClass(s.paymentStatus);
+        const delBadgeClass = getDeliveryBadgeClass(s.deliveryStatus);
+        const isPaid = s.paymentStatus === 'Paid';
+
         tr.innerHTML = `
             <td><strong>${escapeHtml(s.id)}</strong></td>
             <td>${escapeHtml(s.date)}</td>
@@ -1037,8 +1134,15 @@ function renderSales() {
             <td><strong>${s.quantity}</strong></td>
             <td>${moneyZA(s.unitPrice)}</td>
             <td><strong>${moneyZA(s.total)}</strong></td>
-            <td><span class="badge ${s.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-credit'}">${escapeHtml(s.paymentStatus)}</span></td>
-            <td>${escapeHtml(s.deliveryStatus)}</td>
+            <td><span class="badge ${payBadgeClass}">${escapeHtml(s.paymentStatus)}</span></td>
+            <td><span class="badge ${delBadgeClass}">${escapeHtml(s.deliveryStatus)}</span></td>
+            <td style="text-align: right;">
+                <div style="display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap;">
+                    ${!isPaid ? `<button class="btn btn-sm btn-primary" data-action="mark-sale-paid" data-id="${escapeHtml(s.id)}" title="Confirm payment received">✓ Mark Paid</button>` : ''}
+                    <button class="btn btn-sm btn-secondary" data-action="edit-sale-status" data-id="${escapeHtml(s.id)}">✏️ Status</button>
+                    <button class="btn btn-sm btn-danger-outline" data-action="delete-sale" data-id="${escapeHtml(s.id)}">Delete</button>
+                </div>
+            </td>
         `;
         tableBody.appendChild(tr);
     });
@@ -1314,8 +1418,33 @@ function openFollowupModalForCustomer(customerId = "") {
     openModal('followupModal');
 }
 
+// Edit Sale Status Modal
+function openEditSaleStatusModal(saleId) {
+    const sales = store.getSales();
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return;
+
+    if (byId('editSaleId')) byId('editSaleId').value = sale.id;
+    if (byId('editSalePaymentStatus')) byId('editSalePaymentStatus').value = sale.paymentStatus || 'Pending';
+    if (byId('editSaleDeliveryStatus')) byId('editSaleDeliveryStatus').value = sale.deliveryStatus || 'Pending WhatsApp';
+
+    openModal('editSaleStatusModal');
+}
+
 // FORM SUBMISSIONS
 function initForms() {
+    // Edit Sale Status Form
+    const editSaleStatusForm = byId('editSaleStatusForm');
+    if (editSaleStatusForm) {
+        editSaleStatusForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saleId = byId('editSaleId').value;
+            const paymentStatus = byId('editSalePaymentStatus').value;
+            const deliveryStatus = byId('editSaleDeliveryStatus').value;
+            await store.updateSaleStatus(saleId, paymentStatus, deliveryStatus);
+            closeModal('editSaleStatusModal');
+        });
+    }
     // Product Form
     const productForm = byId('productForm');
     if (productForm) {
