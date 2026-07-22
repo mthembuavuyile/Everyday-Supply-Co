@@ -377,7 +377,15 @@
                         <h1>Stock & Product Catalog</h1>
                         <p>Manage product items, image assets, store categories, prices, and box quantities.</p>
                     </div>
-                    <div class="header-actions">
+                <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="openImportModal('products')">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            Import CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportProductsCSV()">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Export CSV
+                        </button>
                         <button class="btn btn-primary" onclick="openProductModal()">
                             <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             + Add New Product
@@ -426,6 +434,10 @@
                         <p>Track leads, active buyers, and Johannesburg delivery locations.</p>
                     </div>
                     <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="openImportModal('customers')">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            Import CSV
+                        </button>
                         <button class="btn btn-secondary" onclick="exportCustomersCSV()">Export CSV</button>
                         <button class="btn btn-primary" onclick="openCustomerModal()">
                             <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -931,6 +943,31 @@
                     <button type="submit" class="btn btn-primary">Schedule Reminder</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 6. CSV Import Modal (Shared for Products & Customers) -->
+    <div class="modal" id="importModal">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <h2 id="importModalTitle">Import from CSV</h2>
+                <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-dropzone">
+                    <svg class="icon icon-lg" viewBox="0 0 24 24" style="color: var(--primary); margin-bottom: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <label for="csvFileInput" class="import-file-label">
+                        <strong>Choose a CSV file</strong>
+                        <span style="font-size: 12px; color: var(--slate-500);">or drag and drop here</span>
+                    </label>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                </div>
+                <div id="importPreviewArea" style="margin-top: 16px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" id="importConfirmBtn" onclick="confirmCSVImport()" disabled>Import All</button>
+            </div>
         </div>
     </div>
 

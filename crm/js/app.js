@@ -31,6 +31,27 @@ function getTodayISOString() {
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
 
+// WhatsApp Helper - Builds a click-to-chat URL with pre-filled message
+function buildWhatsAppUrl(phone, customerName, context) {
+    if (!phone) return '#';
+    const cleanPhone = phone.replace(/\D/g, '');
+    const intlPhone = cleanPhone.startsWith('0') ? '27' + cleanPhone.slice(1) : cleanPhone;
+    const companyName = fbManager.branding ? fbManager.branding.companyName : 'our team';
+    let message = '';
+    if (context === 'greeting') {
+        message = `Hi ${customerName || 'there'}, this is ${companyName}. How can we assist you today?`;
+    } else if (context === 'followup-new-lead') {
+        message = `Hi ${customerName || 'there'}, thanks for your interest in ${companyName}. I wanted to follow up on your inquiry. Are you available to chat?`;
+    } else if (context === 'followup-repeat') {
+        message = `Hi ${customerName || 'there'}, it's ${companyName}. Are you ready to place your next order? Let us know what you need.`;
+    } else if (context === 'followup-credit') {
+        message = `Hi ${customerName || 'there'}, this is ${companyName}. I'm reaching out regarding your outstanding balance. When would be convenient to arrange payment?`;
+    } else {
+        message = `Hi ${customerName || 'there'}, this is ${companyName}. Just checking in — is there anything you need?`;
+    }
+    return `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
+}
+
 // Toast Notification Utility
 function showToast(message, type = 'info') {
     const container = byId('toastContainer');
@@ -911,15 +932,14 @@ function renderCustomers() {
 
     filtered.forEach(c => {
         const tr = document.createElement('tr');
-        const cleanPhone = c.phone.replace(/\D/g, '');
-        const waLink = cleanPhone ? `https://wa.me/27${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}` : '#';
+        const waLink = buildWhatsAppUrl(c.phone, c.name, 'greeting');
 
         tr.innerHTML = `
             <td><strong>${escapeHtml(c.id)}</strong></td>
             <td><strong>${escapeHtml(c.name)}</strong></td>
             <td>
-                <a href="${waLink}" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <a href="${waLink}" target="_blank" class="wa-link">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>
                     ${escapeHtml(c.phone)}
                 </a>
             </td>
@@ -1011,6 +1031,13 @@ function renderFollowups() {
         card.style.padding = '20px';
         const isPending = f.status === 'Pending';
 
+        // Determine WhatsApp context based on follow-up reason
+        let waContext = 'general';
+        if (f.reason === 'New lead') waContext = 'followup-new-lead';
+        else if (f.reason === 'Repeat order') waContext = 'followup-repeat';
+        else if (f.reason === 'Credit') waContext = 'followup-credit';
+        const waFollowupLink = buildWhatsAppUrl(f.phone, f.customerName, waContext);
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; items-center; margin-bottom: 12px;">
                 <span class="badge ${isPending ? 'badge-credit' : 'badge-paid'}">${escapeHtml(f.status)}</span>
@@ -1019,7 +1046,8 @@ function renderFollowups() {
             <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-900); margin-bottom: 4px;">${escapeHtml(f.customerName)}</h3>
             <p style="font-size: 12px; color: var(--slate-500); margin-bottom: 12px;">Reason: <strong>${escapeHtml(f.reason)}</strong></p>
             <p style="font-size: 13px; color: var(--slate-700); background: var(--slate-50); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 16px;">${escapeHtml(f.notes || 'No extra details.')}</p>
-            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                ${f.phone ? `<a href="${waFollowupLink}" target="_blank" class="btn btn-sm btn-wa"><svg class="icon icon-sm" viewBox="0 0 24 24" style="fill: #fff; stroke: none;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg> WhatsApp</a>` : ''}
                 ${isPending ? `<button class="btn btn-sm btn-primary" data-action="complete-followup" data-id="${escapeHtml(f.id)}">✓ Mark Done</button>` : ''}
                 <button class="btn btn-sm btn-danger-outline" data-action="delete-followup" data-id="${escapeHtml(f.id)}">Delete</button>
             </div>
@@ -1309,7 +1337,8 @@ function exportSalesCSV() {
         csv += `"${s.id}","${s.date}","${s.customerName}","${s.productName}",${s.quantity},${s.unitPrice},${s.total},"${s.paymentStatus}","${s.deliveryStatus}"\n`;
     });
 
-    downloadCSV(csv, `Everyday_Supply_Sales_Report_${getTodayISOString()}.csv`);
+    const companySlug = (fbManager.branding?.companyName || 'Export').replace(/\s+/g, '_');
+    downloadCSV(csv, `${companySlug}_Sales_Report_${getTodayISOString()}.csv`);
 }
 
 function exportCustomersCSV() {
@@ -1324,7 +1353,24 @@ function exportCustomersCSV() {
         csv += `"${c.id}","${c.name}","${c.phone}","${c.area}","${c.status}","${c.dateAdded || ''}","${c.lastPurchase || ''}","${(c.notes || '').replace(/"/g, '""')}"\n`;
     });
 
-    downloadCSV(csv, `Everyday_Supply_Customers_${getTodayISOString()}.csv`);
+    const companySlug = (fbManager.branding?.companyName || 'Export').replace(/\s+/g, '_');
+    downloadCSV(csv, `${companySlug}_Customers_${getTodayISOString()}.csv`);
+}
+
+function exportProductsCSV() {
+    const products = store.getProducts();
+    if (products.length === 0) {
+        showToast("No product data available to export.", "warning");
+        return;
+    }
+
+    let csv = 'Name,Category,Price,Opening Stock,Stock In,Stock Out,Current Stock,Min Stock,Image URL\n';
+    products.forEach(p => {
+        csv += `"${p.name}","${p.category}",${p.price},${p.openingStock},${p.stockIn},${p.stockOut},${p.currentStock},${p.minStock},"${p.image || ''}"\n`;
+    });
+
+    const companySlug = (fbManager.branding?.companyName || 'Export').replace(/\s+/g, '_');
+    downloadCSV(csv, `${companySlug}_Products_${getTodayISOString()}.csv`);
 }
 
 function downloadCSV(csvContent, filename) {
@@ -1336,6 +1382,258 @@ function downloadCSV(csvContent, filename) {
     link.click();
     document.body.removeChild(link);
     showToast("CSV file exported successfully.", "success");
+}
+
+// --- CSV IMPORT ENGINE ---
+
+/**
+ * Parse a CSV string into an array of objects using the first row as headers.
+ * Handles quoted fields with commas and newlines inside them.
+ */
+function parseCSV(text) {
+    const rows = [];
+    let current = '';
+    let inQuotes = false;
+    const lines = [];
+
+    // Split into lines respecting quoted newlines
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') {
+            inQuotes = !inQuotes;
+            current += ch;
+        } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+            if (current.trim()) lines.push(current);
+            current = '';
+            if (ch === '\r' && text[i + 1] === '\n') i++; // skip \r\n
+        } else {
+            current += ch;
+        }
+    }
+    if (current.trim()) lines.push(current);
+
+    if (lines.length < 2) return { headers: [], data: [] };
+
+    // Parse individual line into fields
+    function parseLine(line) {
+        const fields = [];
+        let field = '';
+        let quoted = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (quoted && line[i + 1] === '"') {
+                    field += '"';
+                    i++;
+                } else {
+                    quoted = !quoted;
+                }
+            } else if (ch === ',' && !quoted) {
+                fields.push(field.trim());
+                field = '';
+            } else {
+                field += ch;
+            }
+        }
+        fields.push(field.trim());
+        return fields;
+    }
+
+    const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+    for (let i = 1; i < lines.length; i++) {
+        const values = parseLine(lines[i]);
+        const obj = {};
+        headers.forEach((h, idx) => {
+            obj[h] = values[idx] || '';
+        });
+        rows.push(obj);
+    }
+
+    return { headers, data: rows };
+}
+
+// CSV Import state
+let csvImportMode = ''; // 'products' or 'customers'
+let csvImportData = [];
+
+function openImportModal(mode) {
+    csvImportMode = mode;
+    csvImportData = [];
+    const modal = byId('importModal');
+    const title = byId('importModalTitle');
+    const previewArea = byId('importPreviewArea');
+    const fileInput = byId('csvFileInput');
+    const confirmBtn = byId('importConfirmBtn');
+
+    if (title) title.textContent = mode === 'products' ? 'Import Products from CSV' : 'Import Customers from CSV';
+    if (previewArea) previewArea.innerHTML = getImportInstructions(mode);
+    if (fileInput) fileInput.value = '';
+    if (confirmBtn) confirmBtn.disabled = true;
+
+    openModal('importModal');
+}
+
+function getImportInstructions(mode) {
+    if (mode === 'products') {
+        return `
+            <div class="import-instructions">
+                <h4>CSV Format Required</h4>
+                <p>Your CSV file must have the following column headers (first row):</p>
+                <div class="import-columns-preview">
+                    <code>Name, Category, Price, Opening Stock, Min Stock, Image URL</code>
+                </div>
+                <p style="font-size: 12px; color: var(--slate-500); margin-top: 8px;">Columns are matched by name (case-insensitive). Extra columns are ignored.</p>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="import-instructions">
+                <h4>CSV Format Required</h4>
+                <p>Your CSV file must have the following column headers (first row):</p>
+                <div class="import-columns-preview">
+                    <code>Name, Phone, Area, Status, Notes</code>
+                </div>
+                <p style="font-size: 12px; color: var(--slate-500); margin-top: 8px;">Status can be: Lead, Active, Repeat, or Inactive. Defaults to Active if omitted.</p>
+            </div>
+        `;
+    }
+}
+
+function handleCSVFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showToast('Please select a .csv file.', 'warning');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const text = e.target.result;
+        const parsed = parseCSV(text);
+
+        if (parsed.data.length === 0) {
+            showToast('CSV file is empty or has no data rows.', 'warning');
+            return;
+        }
+
+        csvImportData = parsed.data;
+        renderImportPreview(parsed);
+
+        const confirmBtn = byId('importConfirmBtn');
+        if (confirmBtn) confirmBtn.disabled = false;
+    };
+    reader.readAsText(file);
+}
+
+function renderImportPreview(parsed) {
+    const previewArea = byId('importPreviewArea');
+    if (!previewArea) return;
+
+    const previewRows = parsed.data.slice(0, 10); // Show first 10 rows
+    const totalRows = parsed.data.length;
+
+    let html = `
+        <div class="import-preview-header">
+            <strong>${totalRows} row${totalRows !== 1 ? 's' : ''} found</strong>
+            ${totalRows > 10 ? `<span style="color: var(--slate-500); font-size: 12px;">Showing first 10</span>` : ''}
+        </div>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="data-table">
+                <thead><tr>${parsed.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+                <tbody>
+    `;
+
+    previewRows.forEach(row => {
+        html += '<tr>';
+        parsed.headers.forEach(h => {
+            html += `<td>${escapeHtml(row[h] || '')}</td>`;
+        });
+        html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    previewArea.innerHTML = html;
+}
+
+async function confirmCSVImport() {
+    if (csvImportData.length === 0) {
+        showToast('No data to import.', 'warning');
+        return;
+    }
+
+    const confirmBtn = byId('importConfirmBtn');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Importing...';
+    }
+
+    try {
+        if (csvImportMode === 'products') {
+            await importProductsFromData(csvImportData);
+        } else if (csvImportMode === 'customers') {
+            await importCustomersFromData(csvImportData);
+        }
+        closeModal('importModal');
+    } catch (err) {
+        console.error('Import error:', err);
+        showToast('Import failed: ' + err.message, 'warning');
+    }
+
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Import All';
+    }
+}
+
+async function importProductsFromData(data) {
+    let imported = 0;
+    let skipped = 0;
+
+    for (const row of data) {
+        // Map flexible column names
+        const name = row.name || row.productname || row.item || '';
+        if (!name) { skipped++; continue; }
+
+        const productData = {
+            name: name,
+            category: row.category || row.cat || 'General',
+            price: row.price || row.sellingprice || row.unitprice || '0',
+            imageUrl: row.imageurl || row.image || row.img || '',
+            openingStock: row.openingstock || row.opening || row.stock || row.quantity || '0',
+            minStock: row.minstock || row.min || row.minalert || '5'
+        };
+
+        await store.saveProduct(productData);
+        imported++;
+    }
+
+    showToast(`Imported ${imported} product${imported !== 1 ? 's' : ''}${skipped > 0 ? `, ${skipped} skipped (no name)` : ''}.`, 'success');
+}
+
+async function importCustomersFromData(data) {
+    let imported = 0;
+    let skipped = 0;
+
+    for (const row of data) {
+        const name = row.name || row.fullname || row.customername || '';
+        if (!name) { skipped++; continue; }
+
+        const customerData = {
+            name: name,
+            phone: row.phone || row.whatsapp || row.mobile || row.cellphone || row.tel || '',
+            area: row.area || row.residence || row.location || row.address || '',
+            status: row.status || 'Active',
+            notes: row.notes || row.note || row.deliverypreferences || ''
+        };
+
+        await store.saveCustomer(customerData);
+        imported++;
+    }
+
+    showToast(`Imported ${imported} customer${imported !== 1 ? 's' : ''}${skipped > 0 ? `, ${skipped} skipped (no name)` : ''}.`, 'success');
 }
 
 // --- NAVIGATION & ROUTING ---
@@ -1402,9 +1700,17 @@ function initNavigation() {
 }
 
 // INITIALIZATION ENTRY POINT
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load external config before initializing Firebase
+    await fbManager.loadConfig();
     store.loadLocalCache();
     initAuthGateway();
     initNavigation();
     initForms();
+
+    // CSV file input listener
+    const csvFileInput = byId('csvFileInput');
+    if (csvFileInput) {
+        csvFileInput.addEventListener('change', handleCSVFileSelect);
+    }
 });

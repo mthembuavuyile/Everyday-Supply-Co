@@ -1173,3 +1173,128 @@ body {
     font-size: 11px;
     color: var(--slate-400);
 }
+
+/* WhatsApp Link Styling */
+.wa-link {
+    color: #25D366;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.wa-link:hover {
+    color: #128C7E;
+    transform: translateY(-1px);
+}
+
+.wa-link svg {
+    fill: #25D366;
+    stroke: none;
+}
+
+.wa-link:hover svg {
+    fill: #128C7E;
+}
+
+/* WhatsApp Button (Follow-up Cards) */
+.btn-wa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.btn-wa:hover {
+    background: #128C7E;
+    transform: translateY(-1px);
+}
+
+.btn-wa svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* CSV Import Dropzone */
+.import-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    border: 2px dashed var(--slate-300);
+    border-radius: var(--radius-lg);
+    background: var(--slate-50);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.import-dropzone:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.import-file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--primary);
+    font-size: 14px;
+}
+
+/* Import Instructions */
+.import-instructions {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+.import-instructions h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 8px;
+}
+
+.import-instructions p {
+    font-size: 13px;
+    color: var(--slate-600);
+    margin-bottom: 4px;
+}
+
+.import-columns-preview {
+    background: var(--slate-900);
+    color: #a5f3fc;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    margin-top: 8px;
+    overflow-x: auto;
+}
+
+/* Import Preview Header */
+.import-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--slate-200);
+    font-size: 14px;
+    color: var(--slate-900);
+}

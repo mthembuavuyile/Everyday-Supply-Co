@@ -1,0 +1,18 @@
+{
+    "firebase": {
+        "apiKey": "AIzaSyDHklaBKNn0_FZ2Gqk32-QAjxhjGq3clAY",
+        "authDomain": "everyday-supply-co.firebaseapp.com",
+        "projectId": "everyday-supply-co",
+        "storageBucket": "everyday-supply-co.firebasestorage.app",
+        "messagingSenderId": "694326382277",
+        "appId": "1:694326382277:web:94c510004ba1010268aaac"
+    },
+    "branding": {
+        "companyName": "Everyday Supply",
+        "tagline": "Business CRM & Inventory Hub",
+        "accentColor": "#0f766e",
+        "accentColorHover": "#0d9488",
+        "accentColorLight": "#ccfbf1",
+        "accentColorDark": "#115e59"
+    }
+}
