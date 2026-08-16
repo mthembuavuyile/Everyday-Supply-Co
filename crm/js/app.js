@@ -242,7 +242,8 @@ class ProductionHubStore {
             const stockIn = parseInt(p.stockIn) || 0;
             const stockOut = parseInt(p.stockOut) || 0;
             const currentStock = opening + stockIn - stockOut;
-            const minStock = parseInt(p.minStock) || 5;
+            const globalThreshold = parseInt(localStorage.getItem('lowStockThreshold')) || 5;
+            const minStock = parseInt(p.minStock) || globalThreshold;
             const needsRestock = currentStock <= minStock;
             let image = p.imageUrl || p.image || '';
             if (!image || image.includes('aceonlinesa.co.za')) {
@@ -686,45 +687,6 @@ class ProductionHubStore {
         );
     }
 
-    async purgeAllTestData() {
-        showConfirmDialog(
-            "Purge All Test Data",
-            "Are you sure you want to permanently delete all test sales orders, test customers, and test follow-up reminders from Cloud Firestore? This will reset revenue to R 0.00 so you can record real transactions.",
-            "Purge All Test Data",
-            async () => {
-                showToast("Purging test data from Firestore...", "info");
-                const db = fbManager.db;
-
-                if (db) {
-                    const cols = ['sales', 'customers', 'followups'];
-                    for (const col of cols) {
-                        try {
-                            const snap = await db.collection(col).get();
-                            const batch = db.batch();
-                            snap.forEach(doc => batch.delete(doc.ref));
-                            await batch.commit();
-                        } catch (err) {
-                            console.error(`Error purging ${col}:`, err);
-                        }
-                    }
-                }
-
-                // Reset local state
-                this.data.sales = [];
-                this.data.customers = [];
-                this.data.followups = [];
-
-                // Reset product stockOut counters back to 0
-                this.data.products.forEach(p => {
-                    p.stockOut = 0;
-                });
-
-                this.saveLocalCache();
-                renderAllSections();
-                showToast("Test data purged! Total Revenue is reset to R 0.00 and CRM is ready for real data.", "success");
-            }
-        );
-    }
 
     // FOLLOW-UPS
     getFollowups() {
@@ -900,11 +862,25 @@ function initAuthGateway() {
         }
     });
 
-    // Purge test data handler
-    const purgeBtn = byId('purgeTestDataBtn');
-    if (purgeBtn) {
-        purgeBtn.addEventListener('click', () => {
-            store.purgeAllTestData();
+    // Low Stock Threshold setting
+    const savedThreshold = localStorage.getItem('lowStockThreshold');
+    const thresholdInput = byId('lowStockThresholdInput');
+    if (thresholdInput && savedThreshold) {
+        thresholdInput.value = savedThreshold;
+    }
+
+    const saveThresholdBtn = byId('saveLowStockThresholdBtn');
+    if (saveThresholdBtn) {
+        saveThresholdBtn.addEventListener('click', () => {
+            const val = parseInt(thresholdInput.value) || 5;
+            localStorage.setItem('lowStockThreshold', val);
+            const status = byId('lowStockThresholdStatus');
+            if (status) {
+                status.style.display = 'block';
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            }
+            renderAllSections();
+            showToast(`Low stock alert threshold updated to ${val} units.`, 'success');
         });
     }
 }

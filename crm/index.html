@@ -678,18 +678,27 @@
 
                 <div class="card" style="max-width: 600px; margin-top: 20px;">
                     <div class="card-header">
-                        <div class="card-title" style="color: var(--danger-dark);">Database & Production Reset</div>
+                        <div class="card-title">Low Stock Alert Threshold</div>
                     </div>
                     <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
                         <p style="margin: 0; font-size: 13px; color: var(--slate-600);">
-                            Purge initial test data (test sales, test customers, test follow-ups) from Cloud Firestore & local cache to start fresh with real clients.
+                            Set the minimum stock level that triggers low stock warnings on the dashboard and inventory page. Products at or below this number will be flagged for restocking.
                         </p>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <button id="purgeTestDataBtn" class="btn btn-danger-outline" style="flex: 1; min-width: 200px; justify-content: center;">
-                                <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Purge All Test Sales & Customers
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;">
+                                <label for="lowStockThresholdInput" style="font-size: 13px; font-weight: 600; color: var(--slate-700); white-space: nowrap;">Alert when stock ≤</label>
+                                <input type="number" id="lowStockThresholdInput" min="0" max="999" value="5" 
+                                    style="width: 80px; padding: 8px 12px; border: 1px solid var(--slate-200); border-radius: var(--radius-md); font-size: 14px; font-weight: 700; text-align: center; color: var(--slate-900);">
+                                <span style="font-size: 13px; color: var(--slate-500);">units</span>
+                            </div>
+                            <button id="saveLowStockThresholdBtn" class="btn btn-primary" style="justify-content: center; min-width: 120px;">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                Save
                             </button>
                         </div>
+                        <p id="lowStockThresholdStatus" style="margin: 0; font-size: 12px; color: var(--success); display: none;">
+                            ✓ Threshold saved successfully.
+                        </p>
                     </div>
                 </div>
             </section>
