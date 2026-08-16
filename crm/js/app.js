@@ -775,18 +775,36 @@ function initAuthGateway() {
 
     if (!fbManager.init()) return;
 
+    const ALLOWED_EMAILS = [
+        'mthembuavuyile@gmail.com',
+        'asandamanelisi1998@gmail.com',
+        'ayandalucasn@gmail.com'
+    ];
+
     fbManager.auth.onAuthStateChanged(user => {
         if (user) {
-            if (authOverlay) authOverlay.style.display = 'none';
-            if (mainApp) mainApp.style.display = 'flex';
+            const userEmail = (user.email || '').toLowerCase();
+            
+            if (ALLOWED_EMAILS.includes(userEmail)) {
+                if (authOverlay) authOverlay.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'flex';
 
-            const email = user.email || 'Admin User';
-            if (byId('userEmailDisplay')) byId('userEmailDisplay').textContent = email;
-            if (byId('settingsEmailDisplay')) byId('settingsEmailDisplay').textContent = email;
-            if (byId('settingsAvatar')) byId('settingsAvatar').textContent = email.charAt(0).toUpperCase();
+                const email = user.email || 'Admin User';
+                if (byId('userEmailDisplay')) byId('userEmailDisplay').textContent = email;
+                if (byId('settingsEmailDisplay')) byId('settingsEmailDisplay').textContent = email;
+                if (byId('settingsAvatar')) byId('settingsAvatar').textContent = email.charAt(0).toUpperCase();
 
-            // Connect real-time Firestore listeners for production data
-            store.initFirestoreListeners();
+                // Connect real-time Firestore listeners for production data
+                store.initFirestoreListeners();
+            } else {
+                // Unauthorized user
+                fbManager.auth.signOut().then(() => {
+                    if (authErrorMsg) {
+                        authErrorMsg.textContent = "Access Denied: You are not an authorized team member.";
+                        authErrorMsg.style.display = 'block';
+                    }
+                });
+            }
         } else {
             if (authOverlay) authOverlay.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
