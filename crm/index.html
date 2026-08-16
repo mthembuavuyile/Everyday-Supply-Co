@@ -661,51 +661,78 @@
                 <div class="header-bar">
                     <div class="header-title">
                         <h1>Team & Activity Log</h1>
-                        <p>Track team member logins, system actions, and audit trail (AAA Framework).</p>
+                        <p>Real-time team presence, activity timeline, and system audit log.</p>
                     </div>
                 </div>
 
-                <!-- Team Members -->
+                <!-- Team Members Presence Card -->
                 <div class="card" style="margin-bottom: 20px;">
                     <div class="card-header">
-                        <div class="card-title">Team Members</div>
-                        <span class="badge" id="teamOnlineCount" style="background: var(--success-light); color: var(--success-dark); font-weight: 700;">0 Online</span>
+                        <div class="card-title">
+                            <span>Team Members</span>
+                            <span class="badge badge-active" id="teamOnlineCount" style="margin-left: 8px;">0 Online</span>
+                        </div>
+                        <button id="refreshTeamBtn" class="btn btn-secondary btn-sm" title="Refresh team status">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            <span>Refresh</span>
+                        </button>
                     </div>
-                    <div style="padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;" id="teamMembersGrid">
+                    <div class="team-members-grid" id="teamMembersGrid">
                         <!-- Populated dynamically -->
                     </div>
                 </div>
 
                 <!-- Recent Activity / Audit Log -->
                 <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Activity & Audit Log</div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <select id="activityFilterType" class="table-search" style="width: auto; min-width: 130px; padding: 6px 10px; font-size: 12px;">
+                    <div class="card-header activity-card-header">
+                        <div class="card-title">
+                            <span>Activity Timeline</span>
+                            <span class="badge badge-inactive" id="activityTotalCount" style="margin-left: 6px; font-size: 11px;">0 items</span>
+                        </div>
+                        <div class="activity-toolbar">
+                            <div class="activity-search-wrapper">
+                                <svg class="icon icon-sm activity-search-icon" viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text" id="activitySearchInput" placeholder="Search actions..." class="activity-search-input">
+                            </div>
+                            <select id="activityFilterType" class="activity-filter-select">
                                 <option value="all">All Actions</option>
-                                <option value="auth">Logins & Logouts</option>
-                                <option value="product">Products</option>
+                                <option value="sale">Sales Orders</option>
+                                <option value="product">Stock & Products</option>
                                 <option value="customer">Customers</option>
-                                <option value="sale">Sales</option>
                                 <option value="followup">Follow-ups</option>
+                                <option value="auth">Logins & Auth</option>
                                 <option value="settings">Settings</option>
                             </select>
-                            <select id="activityFilterUser" class="table-search" style="width: auto; min-width: 130px; padding: 6px 10px; font-size: 12px;">
+                            <select id="activityFilterUser" class="activity-filter-select">
                                 <option value="all">All Members</option>
-                                <option value="mthembuavuyile@gmail.com">Avuyile</option>
-                                <option value="asandamanelisi1998@gmail.com">Asanda</option>
-                                <option value="ayandalucasn@gmail.com">Ayanda</option>
                             </select>
+                            <button id="exportActivityBtn" class="btn btn-secondary btn-sm" title="Export Activity Log to CSV">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>Export CSV</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table>
+
+                    <!-- Desktop Table View -->
+                    <div class="table-responsive activity-desktop-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th style="width: 150px;">Timestamp</th>
-                                    <th style="width: 120px;">Member</th>
-                                    <th style="width: 100px;">Action</th>
-                                    <th>Details</th>
+                                    <th style="width: 160px;">Team Member</th>
+                                    <th style="width: 130px;">Action Category</th>
+                                    <th>Activity Details</th>
                                 </tr>
                             </thead>
                             <tbody id="activityLogBody">
@@ -713,8 +740,15 @@
                             </tbody>
                         </table>
                     </div>
-                    <div style="padding: 12px 16px; display: flex; justify-content: center;">
-                        <button id="loadMoreActivityBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 16px;">Load More</button>
+
+                    <!-- Mobile Feed View (Optimized for Small Phone Screens) -->
+                    <div class="activity-mobile-feed" id="activityMobileFeed">
+                        <!-- Populated dynamically on mobile devices -->
+                    </div>
+
+                    <div class="activity-footer">
+                        <span class="activity-pagination-info" id="activityPaginationInfo">Showing 0 activities</span>
+                        <button id="loadMoreActivityBtn" class="btn btn-secondary btn-sm" style="display: none;">Load More</button>
                     </div>
                 </div>
             </section>

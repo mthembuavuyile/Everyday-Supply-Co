@@ -23,6 +23,7 @@ function initAuthGateway() {
                 if (mainApp) mainApp.style.display = 'flex';
 
                 const email = user.email || 'Admin User';
+                localStorage.setItem('lastUserEmail', email);
                 if (byId('userEmailDisplay')) byId('userEmailDisplay').textContent = email;
                 if (byId('settingsEmailDisplay')) byId('settingsEmailDisplay').textContent = email;
                 if (byId('settingsAvatar')) byId('settingsAvatar').textContent = email.charAt(0).toUpperCase();
