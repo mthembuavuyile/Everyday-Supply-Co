@@ -166,6 +166,14 @@
 
                 <div class="nav-section-title">System</div>
 
+                <div class="nav-item" data-section="team-activity">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <span>Team & Activity</span>
+                    <span class="badge badge-restock" id="activityBadge" style="display: none;">0</span>
+                </div>
+
                 <div class="nav-item" data-section="settings">
                     <svg class="icon" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="3"></circle>
@@ -639,7 +647,70 @@
                 </div>
             </section>
 
-            <!-- 7. ADMIN PROFILE & SETTINGS -->
+            <!-- 7. TEAM & ACTIVITY LOG -->
+            <section class="page-section" id="team-activity">
+                <div class="header-bar">
+                    <div class="header-title">
+                        <h1>Team & Activity Log</h1>
+                        <p>Track team member logins, system actions, and audit trail (AAA Framework).</p>
+                    </div>
+                </div>
+
+                <!-- Team Members -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <div class="card-title">Team Members</div>
+                        <span class="badge" id="teamOnlineCount" style="background: var(--success-light); color: var(--success-dark); font-weight: 700;">0 Online</span>
+                    </div>
+                    <div style="padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;" id="teamMembersGrid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Audit Log -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Activity & Audit Log</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="activityFilterType" class="table-search" style="width: auto; min-width: 130px; padding: 6px 10px; font-size: 12px;">
+                                <option value="all">All Actions</option>
+                                <option value="auth">Logins & Logouts</option>
+                                <option value="product">Products</option>
+                                <option value="customer">Customers</option>
+                                <option value="sale">Sales</option>
+                                <option value="followup">Follow-ups</option>
+                                <option value="settings">Settings</option>
+                            </select>
+                            <select id="activityFilterUser" class="table-search" style="width: auto; min-width: 130px; padding: 6px 10px; font-size: 12px;">
+                                <option value="all">All Members</option>
+                                <option value="mthembuavuyile@gmail.com">Avuyile</option>
+                                <option value="asandamanelisi1998@gmail.com">Asanda</option>
+                                <option value="ayandalucasn@gmail.com">Ayanda</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 150px;">Timestamp</th>
+                                    <th style="width: 120px;">Member</th>
+                                    <th style="width: 100px;">Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityLogBody">
+                                <tr><td colspan="4" style="text-align: center; color: var(--slate-400); padding: 40px;">Loading activity log...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="padding: 12px 16px; display: flex; justify-content: center;">
+                        <button id="loadMoreActivityBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 16px;">Load More</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. ADMIN PROFILE & SETTINGS -->
             <section class="page-section" id="settings">
                 <div class="header-bar">
                     <div class="header-title">

@@ -9,6 +9,18 @@ function byId(id) {
     return document.getElementById(id);
 }
 
+// Team member definitions
+const TEAM_MEMBERS = {
+    'mthembuavuyile@gmail.com': { name: 'Avuyile', role: 'Owner / Lead Admin', color: '#0f766e' },
+    'asandamanelisi1998@gmail.com': { name: 'Asanda', role: 'Team Member', color: '#7c3aed' },
+    'ayandalucasn@gmail.com': { name: 'Ayanda', role: 'Team Member', color: '#2563eb' }
+};
+
+function getTeamMemberName(email) {
+    const member = TEAM_MEMBERS[(email || '').toLowerCase()];
+    return member ? member.name : (email || 'Unknown').split('@')[0];
+}
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -147,7 +159,8 @@ class ProductionHubStore {
             products: [],
             customers: [],
             sales: [],
-            followups: []
+            followups: [],
+            activityLogs: []
         };
         this.isCloudConnected = false;
         this.unsubscribers = [];
@@ -176,7 +189,7 @@ class ProductionHubStore {
 
         const db = fbManager.db;
         if (!db) return;
-        const collections = ['products', 'customers', 'sales', 'followups'];
+        const collections = ['products', 'customers', 'sales', 'followups', 'activity_logs'];
 
         // Clear existing listeners
         this.unsubscribers.forEach(unsub => typeof unsub === 'function' && unsub());
@@ -206,7 +219,11 @@ class ProductionHubStore {
                         items.push({ id: doc.id, ...doc.data() });
                     });
 
-                    this.data[col] = items;
+                    if (col === 'activity_logs') {
+                        this.data.activityLogs = items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    } else {
+                        this.data[col] = items;
+                    }
                     this.saveLocalCache();
                     renderAllSections();
                 }, err => {
@@ -287,6 +304,7 @@ class ProductionHubStore {
         renderAllSections();
 
         showToast(isEdit ? "Product updated." : "Product added to catalog.", "success");
+        logActivity('product', isEdit ? 'Update Product' : 'Add Product', (isEdit ? 'Updated ' : 'Added ') + payload.name);
 
         if (db) {
             try {
@@ -313,6 +331,7 @@ class ProductionHubStore {
                 this.saveLocalCache();
                 renderAllSections();
                 showToast("Product deleted.", "warning");
+                logActivity('product', 'Delete Product', 'Deleted product ' + (prod ? prod.name : id));
 
                 const db = fbManager.db;
                 if (db) {
@@ -337,6 +356,7 @@ class ProductionHubStore {
         this.saveLocalCache();
         renderAllSections();
         showToast(`Added ${additionalQty} boxes to stock for ${prod.name}.`, "success");
+        logActivity('product', 'Add Stock', `Added ${additionalQty} units to ${prod.name}`);
 
         const db = fbManager.db;
         if (db) {
@@ -368,6 +388,7 @@ class ProductionHubStore {
 
         const newCurrent = opening + stockIn - stockOut;
         showToast(`Stock corrected for ${prod.name}. Current stock is now ${newCurrent} boxes.`, "success");
+        logActivity('product', 'Correct Stock', `Corrected stock for ${prod.name} to ${newCurrent} units`);
 
         const db = fbManager.db;
         if (db) {
@@ -435,6 +456,7 @@ class ProductionHubStore {
         renderAllSections();
 
         showToast(isEdit ? "Customer details updated." : `Customer ${payload.name} added.`, "success");
+        logActivity('customer', isEdit ? 'Update Customer' : 'Add Customer', (isEdit ? 'Updated ' : 'Added ') + payload.name);
 
         if (db) {
             try {
@@ -461,6 +483,7 @@ class ProductionHubStore {
                 this.saveLocalCache();
                 renderAllSections();
                 showToast("Customer record deleted.", "warning");
+                logActivity('customer', 'Delete Customer', 'Deleted customer ' + (cust ? cust.name : id));
 
                 const db = fbManager.db;
                 if (db) {
@@ -539,6 +562,7 @@ class ProductionHubStore {
         this.saveLocalCache();
         renderAllSections();
         showToast(`Sale recorded successfully! ${quantity} boxes deducted from inventory.`, "success");
+        logActivity('sale', 'Record Sale', `Recorded sale of ${quantity}x ${product ? product.name : 'items'} to ${customer ? customer.name : 'customer'}`);
 
         if (db) {
             try {
@@ -621,6 +645,7 @@ class ProductionHubStore {
         this.saveLocalCache();
         renderAllSections();
         showToast(`Order status updated to ${paymentStatus} (${deliveryStatus}).`, "success");
+        logActivity('sale', 'Update Sale', `Updated order ${saleId} to ${paymentStatus} / ${deliveryStatus}`);
 
         const db = fbManager.db;
         if (db) {
@@ -670,6 +695,7 @@ class ProductionHubStore {
                 this.saveLocalCache();
                 renderAllSections();
                 showToast("Sales order deleted and inventory stock restored.", "warning");
+                logActivity('sale', 'Delete Sale', 'Deleted order ' + id);
 
                 const db = fbManager.db;
                 if (db) {
@@ -715,6 +741,7 @@ class ProductionHubStore {
         this.saveLocalCache();
         renderAllSections();
         showToast("Follow-up reminder scheduled.", "success");
+        logActivity('followup', 'Add Follow-up', `Scheduled follow-up for ${payload.customerName}`);
 
         if (db) {
             try {
@@ -732,6 +759,7 @@ class ProductionHubStore {
             this.saveLocalCache();
             renderAllSections();
             showToast("Follow-up marked as completed.", "success");
+            logActivity('followup', 'Complete Follow-up', `Marked follow-up as completed for ${followup.customerName}`);
         }
 
         const db = fbManager.db;
@@ -754,6 +782,7 @@ class ProductionHubStore {
                 this.saveLocalCache();
                 renderAllSections();
                 showToast("Follow-up deleted.", "warning");
+                logActivity('followup', 'Delete Follow-up', 'Deleted follow-up reminder');
 
                 const db = fbManager.db;
                 if (db) {
@@ -800,8 +829,14 @@ function initAuthGateway() {
                 if (byId('settingsEmailDisplay')) byId('settingsEmailDisplay').textContent = email;
                 if (byId('settingsAvatar')) byId('settingsAvatar').textContent = email.charAt(0).toUpperCase();
 
+                // Log sign-in activity
+                logActivity('auth', 'Sign In', `${getTeamMemberName(email)} signed in`, email);
+
                 // Connect real-time Firestore listeners for production data
                 store.initFirestoreListeners();
+
+                // Initialize activity log listener
+                initActivityLogListener();
             } else {
                 // Unauthorized user
                 fbManager.auth.signOut().then(() => {
@@ -857,6 +892,8 @@ function initAuthGateway() {
     logoutBtns.forEach(btn => {
         if (btn) {
             btn.addEventListener('click', () => {
+                const currentEmail = fbManager.auth.currentUser ? fbManager.auth.currentUser.email : 'Unknown';
+                logActivity('auth', 'Sign Out', `${getTeamMemberName(currentEmail)} signed out`, currentEmail);
                 fbManager.auth.signOut();
             });
         }
@@ -881,6 +918,7 @@ function initAuthGateway() {
             }
             renderAllSections();
             showToast(`Low stock alert threshold updated to ${val} units.`, 'success');
+            logActivity('settings', 'Update Settings', `Changed low stock threshold to ${val}`);
         });
     }
 }
@@ -894,6 +932,7 @@ function renderAllSections() {
     renderSales();
     renderFollowups();
     renderReports();
+    renderTeamActivity();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -1951,6 +1990,146 @@ function initNavigation() {
         });
     }
 }
+
+// --- ACTIVITY LOGGING & TEAM FUNCTIONS ---
+
+function logActivity(type, action, details, userEmail = null) {
+    const db = fbManager.db;
+    if (!db) return;
+    const email = userEmail || (fbManager.auth.currentUser ? fbManager.auth.currentUser.email : 'system@everydaysupply.co.za');
+    const timestamp = new Date().toISOString();
+    const logId = 'LOG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    const payload = {
+        id: logId,
+        type: type, // 'auth', 'product', 'customer', 'sale', 'followup', 'settings'
+        action: action,
+        details: details,
+        user: email,
+        timestamp: timestamp
+    };
+
+    db.collection('activity_logs').doc(logId).set(payload).catch(err => {
+        console.error("Failed to log activity:", err);
+    });
+}
+
+function initActivityLogListener() {
+    // This is handled by the unified store.initFirestoreListeners() now
+}
+
+let currentActivityLogLimit = 20;
+
+function renderTeamActivity() {
+    // Render Team Members Grid
+    const teamGrid = byId('teamMembersGrid');
+    if (teamGrid) {
+        teamGrid.innerHTML = '';
+        let onlineCount = 0;
+        
+        Object.entries(TEAM_MEMBERS).forEach(([email, data]) => {
+            // Check if user is currently online (for now, just check if it's the logged-in user)
+            const isCurrentUser = fbManager.auth && fbManager.auth.currentUser && fbManager.auth.currentUser.email === email;
+            if (isCurrentUser) onlineCount++;
+            
+            const card = document.createElement('div');
+            card.className = 'team-member-card';
+            card.style.cssText = `background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 12px;`;
+            
+            card.innerHTML = `
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${data.color}20; color: ${data.color}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                    ${data.name.charAt(0)}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: var(--slate-800); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${data.name} ${isCurrentUser ? '<span style="font-size: 10px; background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; margin-left: 6px;">You</span>' : ''}
+                    </div>
+                    <div style="font-size: 12px; color: var(--slate-500); margin-top: 2px;">${data.role}</div>
+                    <div style="font-size: 11px; color: var(--slate-400); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${email}</div>
+                </div>
+            `;
+            teamGrid.appendChild(card);
+        });
+        
+        const countBadge = byId('teamOnlineCount');
+        if (countBadge) countBadge.textContent = `${onlineCount} Online`;
+    }
+
+    // Render Activity Log Table
+    const tbody = byId('activityLogBody');
+    if (tbody) {
+        const filterType = byId('activityFilterType') ? byId('activityFilterType').value : 'all';
+        const filterUser = byId('activityFilterUser') ? byId('activityFilterUser').value : 'all';
+        
+        let logs = store.data.activityLogs || [];
+        
+        if (filterType !== 'all') {
+            logs = logs.filter(log => log.type === filterType);
+        }
+        if (filterUser !== 'all') {
+            logs = logs.filter(log => log.user === filterUser);
+        }
+        
+        // Update badge
+        const badge = byId('activityBadge');
+        if (badge) {
+            badge.style.display = logs.length > 0 ? 'inline-flex' : 'none';
+            badge.textContent = logs.length > 99 ? '99+' : logs.length;
+        }
+
+        const toShow = logs.slice(0, currentActivityLogLimit);
+        
+        if (toShow.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--slate-400); padding: 40px;">No activity found matching filters.</td></tr>';
+        } else {
+            tbody.innerHTML = '';
+            toShow.forEach(log => {
+                const tr = document.createElement('tr');
+                const date = new Date(log.timestamp);
+                const memberData = TEAM_MEMBERS[log.user] || { name: log.user.split('@')[0], color: '#64748b' };
+                
+                tr.innerHTML = `
+                    <td style="font-size: 12px; color: var(--slate-500); white-space: nowrap;">
+                        ${date.toLocaleDateString()} <br>
+                        <span style="font-size: 11px;">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${memberData.color}20; color: ${memberData.color}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px;">
+                                ${memberData.name.charAt(0)}
+                            </div>
+                            <span style="font-size: 13px; font-weight: 600;">${memberData.name}</span>
+                        </div>
+                    </td>
+                    <td style="font-size: 13px;">
+                        <span style="background: var(--slate-100); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--slate-200);">${escapeHtml(log.action)}</span>
+                    </td>
+                    <td style="font-size: 13px; color: var(--slate-700);">
+                        ${escapeHtml(log.details)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        const loadMoreBtn = byId('loadMoreActivityBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.style.display = logs.length > currentActivityLogLimit ? 'inline-block' : 'none';
+        }
+    }
+}
+
+// Activity filter listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const filterType = byId('activityFilterType');
+    const filterUser = byId('activityFilterUser');
+    const loadMoreBtn = byId('loadMoreActivityBtn');
+    
+    if (filterType) filterType.addEventListener('change', () => { currentActivityLogLimit = 20; renderTeamActivity(); });
+    if (filterUser) filterUser.addEventListener('change', () => { currentActivityLogLimit = 20; renderTeamActivity(); });
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { currentActivityLogLimit += 20; renderTeamActivity(); });
+});
+
 
 // INITIALIZATION ENTRY POINT
 document.addEventListener('DOMContentLoaded', async () => {
