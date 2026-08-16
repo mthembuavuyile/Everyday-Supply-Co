@@ -394,6 +394,19 @@ class ProductionHubStore {
         const isEdit = !!customerData.id;
         const docId = isEdit ? customerData.id : 'CUST-' + Date.now();
 
+        // Duplicate detection: Check if phone number already exists (for new customers)
+        if (!isEdit && customerData.phone) {
+            const cleanPhone = customerData.phone.replace(/\D/g, '');
+            const existingByPhone = this.data.customers.find(c => {
+                const existingClean = (c.phone || '').replace(/\D/g, '');
+                return existingClean === cleanPhone && existingClean.length > 0;
+            });
+            if (existingByPhone) {
+                showToast(`Duplicate detected: A customer with phone ${customerData.phone} already exists (${existingByPhone.name}). Please edit the existing record instead.`, "warning");
+                return;
+            }
+        }
+
         const payload = {
             name: customerData.name,
             phone: customerData.phone,
@@ -475,6 +488,23 @@ class ProductionHubStore {
 
         const customer = this.data.customers.find(c => c.id === saleData.customerId);
         const product = this.data.products.find(p => p.id === saleData.productId);
+
+        // Stock validation: prevent selling more than available stock
+        if (product) {
+            const opening = parseInt(product.openingStock) || 0;
+            const stockIn = parseInt(product.stockIn) || 0;
+            const stockOut = parseInt(product.stockOut) || 0;
+            const currentStock = opening + stockIn - stockOut;
+
+            if (currentStock <= 0) {
+                showToast(`Cannot record sale: ${product.name || 'This product'} is out of stock (${currentStock} available).`, "warning");
+                return;
+            }
+            if (quantity > currentStock) {
+                showToast(`Cannot sell ${quantity} units of ${product.name || 'this product'}. Only ${currentStock} in stock.`, "warning");
+                return;
+            }
+        }
 
         const payload = {
             id: saleId,
@@ -564,12 +594,26 @@ class ProductionHubStore {
             }
         }
 
-        // Update customer status to Active/Repeat when marked Paid
+        // Update customer status based on payment status change
         const customer = sale.customerId ? this.data.customers.find(c => c.id === sale.customerId) : null;
         if (paymentStatus === 'Paid' && customer) {
             customer.lastPurchase = getTodayISOString();
             if (customer.status === 'Lead' || customer.status === 'Inactive') {
                 customer.status = 'Active';
+            }
+        } else if (paymentStatus === 'Cancelled' && customer) {
+            // Check if customer has any other non-cancelled sales
+            const otherActiveSales = this.data.sales.filter(
+                s => s.customerId === customer.id && s.id !== saleId && s.paymentStatus !== 'Cancelled'
+            );
+            if (otherActiveSales.length === 0) {
+                // No other active sales — revert customer to Lead
+                customer.status = 'Lead';
+                customer.lastPurchase = '';
+            } else {
+                // Update lastPurchase to the most recent non-cancelled sale
+                const sortedSales = otherActiveSales.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+                customer.lastPurchase = sortedSales[0].date || '';
             }
         }
 
@@ -591,7 +635,7 @@ class ProductionHubStore {
                     await db.collection('products').doc(product.id).update({ stockOut: inc }).catch(() => {});
                 }
 
-                if (paymentStatus === 'Paid' && customer) {
+                if (customer && (paymentStatus === 'Paid' || paymentStatus === 'Cancelled')) {
                     await db.collection('customers').doc(customer.id).update({
                         lastPurchase: customer.lastPurchase,
                         status: customer.status

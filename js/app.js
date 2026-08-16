@@ -3,7 +3,7 @@ import { loadCart, saveCart, addToCart, updateQty, getCartTotal, getCartCount } 
 import { renderProducts, renderCartItems, updateCartCount, showToast } from './ui.js';
 import { byId, moneyZA, debounce } from './utils.js';
 import { db } from './firebase.js';
-import { collection, getDocs, query, orderBy, doc, setDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
+import { collection, getDocs, query, orderBy, where, doc, setDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js';
 import { WHATSAPP_NUMBER, FALLBACK_IMAGE } from './data.js';
 
 // State
@@ -49,7 +49,7 @@ function injectSEOSchema(products) {
         "@type": "Offer",
         "priceCurrency": "ZAR",
         "price": p.price,
-        "availability": "https://schema.org/InStock"
+        "availability": p.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
       }
     }
   }));
@@ -72,6 +72,10 @@ async function loadLiveProducts() {
 
     products = snap.docs.map((doc) => {
       const data = doc.data();
+      const opening = parseInt(data.openingStock) || 0;
+      const stockIn = parseInt(data.stockIn) || 0;
+      const stockOut = parseInt(data.stockOut) || 0;
+      const currentStock = opening + stockIn - stockOut;
       return {
         ...data, // Spread remaining fields
         id: doc.id,
@@ -80,6 +84,8 @@ async function loadLiveProducts() {
         category: data.category || 'Uncategorized',
         price: typeof data.price === 'number' ? data.price : parseFloat(data.price) || 0,
         image: data.imageUrl || data.image || FALLBACK_IMAGE,
+        currentStock: currentStock,
+        inStock: currentStock > 0,
       };
     });
   } catch (err) {
@@ -142,6 +148,20 @@ function refreshUI() {
   renderCategoryPills();
 
   renderProducts(gridEl, filtered, (product) => {
+    // Stock check before adding to cart
+    if (!product.inStock) {
+      showToast(`⚠ ${product.name} is out of stock`);
+      return;
+    }
+
+    // Check if adding one more would exceed available stock
+    const existingInCart = cart.find(item => item.id === product.id);
+    const qtyInCart = existingInCart ? existingInCart.qty : 0;
+    if (qtyInCart >= product.currentStock) {
+      showToast(`⚠ Only ${product.currentStock} of ${product.name} available`);
+      return;
+    }
+
     cart = addToCart(cart, product);
     saveCart(cart);
     refreshCart();
@@ -233,22 +253,65 @@ byId('checkout-btn').addEventListener('click', async () => {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const custId = 'CUST-' + Date.now();
 
-  // 1. Sync Customer Record to Firestore for internal CRM
+  // 1. Check if customer already exists by phone number (merge instead of duplicate)
+  let custId;
   try {
-    const custPayload = {
-      id: custId,
-      name: nameInput,
-      phone: phoneInput,
-      area: addressInput,
-      status: 'Lead',
-      dateAdded: today,
-      lastPurchase: '',
-      notes: 'Web Storefront Inquiry',
-      updatedAt: new Date().toISOString()
-    };
-    await setDoc(doc(db, 'customers', custId), custPayload);
+    const cleanPhone = phoneInput.replace(/\D/g, '');
+    const custQuery = query(collection(db, 'customers'), where('phone', '==', phoneInput));
+    const custSnap = await getDocs(custQuery);
+
+    if (!custSnap.empty) {
+      // Existing customer found — reuse their ID and update their record
+      const existingDoc = custSnap.docs[0];
+      custId = existingDoc.id;
+      await updateDoc(doc(db, 'customers', custId), {
+        name: nameInput,
+        area: addressInput,
+        status: 'Active',
+        lastPurchase: today,
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // Also try matching with cleaned phone (no spaces/dashes)
+      let foundById = false;
+      if (cleanPhone !== phoneInput) {
+        const custQuery2 = query(collection(db, 'customers'));
+        const allCustSnap = await getDocs(custQuery2);
+        for (const d of allCustSnap.docs) {
+          const existingPhone = (d.data().phone || '').replace(/\D/g, '');
+          if (existingPhone === cleanPhone && existingPhone.length > 0) {
+            custId = d.id;
+            await updateDoc(doc(db, 'customers', custId), {
+              name: nameInput,
+              area: addressInput,
+              status: 'Active',
+              lastPurchase: today,
+              updatedAt: new Date().toISOString()
+            });
+            foundById = true;
+            break;
+          }
+        }
+      }
+
+      if (!custId) {
+        // No existing customer — create new
+        custId = 'CUST-' + Date.now();
+        const custPayload = {
+          id: custId,
+          name: nameInput,
+          phone: phoneInput,
+          area: addressInput,
+          status: 'Lead',
+          dateAdded: today,
+          lastPurchase: '',
+          notes: 'Web Storefront Inquiry',
+          updatedAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'customers', custId), custPayload);
+      }
+    }
 
     // 2. Sync Sales Orders & Reserve Stock in Firestore
     for (let index = 0; index < cart.length; index++) {
@@ -272,7 +335,7 @@ byId('checkout-btn').addEventListener('click', async () => {
       };
       await setDoc(doc(db, 'sales', saleId), salePayload);
 
-      // Reserve stock in Firestore
+      // Check stock before reserving
       if (item.id) {
         try {
           await updateDoc(doc(db, 'products', item.id), {

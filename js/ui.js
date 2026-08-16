@@ -104,13 +104,14 @@ export function openQuickView(product, onAdd) {
             <!-- CTA -->
             <div style="padding:20px">
                 <button id="quick-view-add-btn"
-                    style="width:100%;background:#059669;color:#fff;border:none;border-radius:16px;
-                           padding:16px;font-size:16px;font-weight:800;cursor:pointer;
+                    style="width:100%;background:${product.inStock === false ? '#d1d5db' : '#059669'};color:#fff;border:none;border-radius:16px;
+                           padding:16px;font-size:16px;font-weight:800;cursor:${product.inStock === false ? 'not-allowed' : 'pointer'};
                            display:flex;align-items:center;justify-content:center;gap:10px;
-                           box-shadow:0 6px 20px rgba(5,150,105,0.3);transition:background .2s,transform .15s"
-                    aria-label="Add ${product.name} to basket">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
-                    Add To Cart
+                           box-shadow:${product.inStock === false ? 'none' : '0 6px 20px rgba(5,150,105,0.3)'};transition:background .2s,transform .15s"
+                    aria-label="${product.inStock === false ? product.name + ' is out of stock' : 'Add ' + product.name + ' to basket'}"
+                    ${product.inStock === false ? 'disabled' : ''}>
+                    ${product.inStock === false ? 'Out of Stock' : `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+                    Add To Cart`}
                 </button>
                 <button id="quick-view-close-btn"
                     style="width:100%;background:transparent;border:none;color:#6b7280;padding:12px;
@@ -196,10 +197,13 @@ export function renderProducts(gridEl, products, onAdd) {
         // Check if string contains "bulk" or "box" to show a badge
         const isBulk = (p.name.toLowerCase().includes('bulk') || p.name.toLowerCase().includes('box') || p.name.toLowerCase().includes('pack'));
         const badge = isBulk ? `<div class="absolute top-2 left-2 z-10 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-black uppercase tracking-wider px-2 py-1 rounded-lg">Bulk Saver</div>` : '';
+        const isOutOfStock = p.inStock === false;
+        const outOfStockBadge = isOutOfStock ? `<div class="absolute top-2 right-2 z-10 bg-red-100 text-red-700 text-[10px] md:text-xs font-black uppercase tracking-wider px-2 py-1 rounded-lg">Out of Stock</div>` : '';
 
         card.innerHTML = `
-            <div class="relative w-full aspect-square bg-gray-50 rounded-xl mb-4 overflow-hidden flex items-center justify-center group-hover:bg-white transition-colors">
+            <div class="relative w-full aspect-square bg-gray-50 rounded-xl mb-4 overflow-hidden flex items-center justify-center group-hover:bg-white transition-colors${isOutOfStock ? ' opacity-50' : ''}">
                 ${badge}
+                ${outOfStockBadge}
                 <img
                     src="${p.image}"
                     alt="${p.name}"
@@ -215,13 +219,14 @@ export function renderProducts(gridEl, products, onAdd) {
                 <div class="mt-auto flex flex-col gap-3 pt-3 border-t border-gray-50/50">
                     <span class="text-lg md:text-xl font-black text-gray-900 tracking-tight">${moneyZA(p.price)}</span>
                     <button
-                        class="add-btn w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20 font-bold text-sm"
-                        aria-label="Add ${p.name} to basket"
+                        class="add-btn w-full ${isOutOfStock ? 'bg-gray-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] shadow-md shadow-emerald-600/20'} text-white py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-sm"
+                        aria-label="${isOutOfStock ? p.name + ' is out of stock' : 'Add ' + p.name + ' to basket'}"
+                        ${isOutOfStock ? 'disabled' : ''}
                     >
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        ${isOutOfStock ? '<span>Out of Stock</span>' : `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
                         </svg>
-                        <span>Add To Cart</span>
+                        <span>Add To Cart</span>`}
                     </button>
                 </div>
             </div>
