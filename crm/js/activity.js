@@ -64,13 +64,23 @@ function formatTimeAgo(timestamp) {
     return date.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' });
 }
 
-// --- REAL-TIME PRESENCE & HEARTBEAT SYSTEM ---
-let presenceHeartbeatTimer = null;
-let presenceUiRefreshTimer = null;
+// --- ACTIVITY-DRIVEN PRESENCE SYSTEM ---
+// No background heartbeat timers. Presence updates only on real CRM actions,
+// page navigation, sign-in/out, and tab visibility changes.
+// Each page load gets a unique session ID so multiple devices for the same
+// email create separate Firestore documents.
+
+const PRESENCE_SESSION_ID = Date.now() + '-' + Math.random().toString(36).substr(2, 5);
 let lastPresenceTouch = 0;
 
 function getPresenceDocId(email) {
-    return (email || '').toLowerCase().trim().replace(/[@.]/g, '_');
+    // Include session ID to prevent multi-device overwrites
+    const emailPart = (email || '').toLowerCase().trim().replace(/[@.]/g, '_');
+    return emailPart + '__' + PRESENCE_SESSION_ID;
+}
+
+function getPresenceEmailKey(email) {
+    return (email || '').toLowerCase().trim();
 }
 
 function updatePresence(status = 'online', action = 'Active in Dashboard') {
@@ -92,6 +102,7 @@ function updatePresence(status = 'online', action = 'Active in Dashboard') {
         name: member.name,
         role: member.role,
         status: status,
+        sessionId: PRESENCE_SESSION_ID,
         lastSeen: now,
         lastSeenISO: new Date().toISOString(),
         lastAction: action
@@ -114,61 +125,33 @@ function updatePresence(status = 'online', action = 'Active in Dashboard') {
 
 function touchPresence(action = 'Active in Dashboard') {
     const now = Date.now();
-    // Throttle user interaction touches to once every 20 seconds
-    if (now - lastPresenceTouch > 20000) {
+    // Throttle presence touches to once every 60 seconds (activity-driven, not spammy)
+    if (now - lastPresenceTouch > 60000) {
         lastPresenceTouch = now;
         updatePresence('online', action);
     }
 }
 
 function startPresenceTracking(email) {
-    if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
-    if (presenceUiRefreshTimer) clearInterval(presenceUiRefreshTimer);
-
-    // Immediate initial presence heartbeat
+    // One-time initial presence update on sign-in (no repeating timers)
     updatePresence('online', 'Dashboard Access');
 
-    // Heartbeat every 30 seconds while window is active
-    presenceHeartbeatTimer = setInterval(() => {
-        if (document.visibilityState === 'visible') {
-            updatePresence('online', 'Active in Dashboard');
-        }
-    }, 30000);
-
-    // Auto-refresh team activity UI every 25 seconds to update relative times & online statuses
-    presenceUiRefreshTimer = setInterval(() => {
-        const teamSec = byId('team-activity');
-        if (teamSec && teamSec.classList.contains('active')) {
-            renderTeamActivity();
-        }
-    }, 25000);
-
-    // Listen to user interactions to touch presence
-    ['click', 'keydown', 'scroll', 'touchstart'].forEach(evtType => {
-        window.addEventListener(evtType, () => touchPresence('Active in Dashboard'), { passive: true });
-    });
-
-    // Handle visibility changes (e.g. switching tabs / minimizing)
+    // Handle visibility changes (tab focus/blur)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-            updatePresence('online', 'Active in Dashboard');
-            renderTeamActivity();
+            updatePresence('online', 'Returned to Dashboard');
         } else {
             updatePresence('idle', 'Away');
         }
     });
 
-    // Handle window beforeunload
+    // Handle window close/navigation
     window.addEventListener('beforeunload', () => {
         updatePresence('offline', 'Closed session');
     });
 }
 
 function stopPresenceTracking() {
-    if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
-    if (presenceUiRefreshTimer) clearInterval(presenceUiRefreshTimer);
-    presenceHeartbeatTimer = null;
-    presenceUiRefreshTimer = null;
     updatePresence('offline', 'Signed out');
 }
 
@@ -283,7 +266,7 @@ function renderTeamActivity() {
             const cleanEmail = email.toLowerCase().trim();
             const isCurrentUser = Boolean(currentAuthEmail && currentAuthEmail === cleanEmail);
             
-            // Presence data
+            // Presence data — all members treated equally by timestamps
             const presence = teamPresence[cleanEmail] || {};
             const presenceLastSeen = presence.lastSeen ? Number(presence.lastSeen) : 0;
             const presenceStatus = presence.status || 'offline';
@@ -295,15 +278,14 @@ function renderTeamActivity() {
 
             const lastActiveTime = Math.max(presenceLastSeen, logLastActiveTime);
 
-            // Online threshold:
-            // - Current user in active dashboard: Always Online
-            // - Other member with heartbeat or activity in last 5 minutes: Online
-            // - Other member active in last 20 minutes: Active recently
-            const isWithin5Min = lastActiveTime > 0 && (now - lastActiveTime < 5 * 60 * 1000);
-            const isWithin20Min = lastActiveTime > 0 && (now - lastActiveTime < 20 * 60 * 1000);
+            // Online threshold (activity-driven, no heartbeat):
+            // - Active in last 10 minutes with non-offline status: Online
+            // - Active in last 30 minutes: Active recently
+            const isWithin10Min = lastActiveTime > 0 && (now - lastActiveTime < 10 * 60 * 1000);
+            const isWithin30Min = lastActiveTime > 0 && (now - lastActiveTime < 30 * 60 * 1000);
             
-            const isOnline = isCurrentUser || (isWithin5Min && presenceStatus !== 'offline');
-            const isRecent = !isOnline && (isWithin20Min || (isWithin5Min && presenceStatus === 'idle'));
+            const isOnline = isWithin10Min && presenceStatus !== 'offline';
+            const isRecent = !isOnline && (isWithin30Min || (isWithin10Min && presenceStatus === 'idle'));
 
             if (isOnline) onlineCount++;
 
@@ -311,7 +293,7 @@ function renderTeamActivity() {
             let statusDotClass = 'status-dot-offline';
             let lastActionText = presence.lastAction || (latestLog ? `${latestLog.action}: ${latestLog.details}` : '');
 
-            if (isCurrentUser) {
+            if (isOnline && isCurrentUser) {
                 statusText = 'Online Now (You)';
                 statusDotClass = 'status-dot-online';
                 if (!lastActionText) lastActionText = 'Active in Dashboard';

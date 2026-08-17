@@ -72,14 +72,22 @@ class ProductionHubStore {
                     }
 
                     if (col === 'team_presence') {
-                        const presenceMap = {};
+                        // Deduplicate by email — keep most recent session per user
+                        const sessionMap = {};
                         snapshot.forEach(doc => {
                             const d = doc.data();
                             if (d && d.email) {
-                                presenceMap[d.email.toLowerCase().trim()] = { id: doc.id, ...d };
+                                const emailKey = d.email.toLowerCase().trim();
+                                const existing = sessionMap[emailKey];
+                                const docLastSeen = Number(d.lastSeen) || 0;
+                                const existingLastSeen = existing ? (Number(existing.lastSeen) || 0) : 0;
+                                // Keep whichever session was most recently active
+                                if (!existing || docLastSeen > existingLastSeen) {
+                                    sessionMap[emailKey] = { id: doc.id, ...d };
+                                }
                             }
                         });
-                        this.data.teamPresence = { ...this.data.teamPresence, ...presenceMap };
+                        this.data.teamPresence = { ...this.data.teamPresence, ...sessionMap };
                     } else if (col === 'security_logs') {
                         const items = [];
                         snapshot.forEach(doc => {
