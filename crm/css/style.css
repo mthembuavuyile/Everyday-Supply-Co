@@ -1072,7 +1072,7 @@ body {
     font-weight: 500;
 }
 
-/* Authentication Overlay Gateway (Private Owner Portal) */
+/* Authentication Overlay Gateway */
 .auth-overlay {
     position: fixed;
     inset: 0;
@@ -2042,5 +2042,48 @@ body {
 
     .activity-footer .btn {
         width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-overlay {
+        padding: 12px;
+    }
+
+    .auth-card {
+        padding: 24px 18px;
+        border-radius: var(--radius-md);
+    }
+
+    .auth-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        margin-bottom: 10px;
+    }
+
+    .auth-header h2 {
+        font-size: 19px;
+    }
+
+    .admin-quick-select-wrapper {
+        padding: 8px 10px;
+    }
+
+    .admin-quick-pills {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+    }
+
+    .admin-pill {
+        padding: 6px 4px;
+        font-size: 11px;
+        gap: 4px;
+    }
+
+    .admin-pill-avatar {
+        width: 16px;
+        height: 16px;
+        font-size: 9px;
     }
 }

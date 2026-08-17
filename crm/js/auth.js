@@ -1,5 +1,5 @@
-// Everyday Supply Co. CRM - Private Owner Authentication Gateway & Dual-Provider Security
-// Enforced whitelist for the 3 authorized site owners
+// Everyday Supply Co. CRM - Administrator Authentication Gateway & Dual-Provider Security
+// Authorized administrator access control
 
 const ALLOWED_ADMIN_EMAILS = [
     'mthembuavuyile@gmail.com',
@@ -49,6 +49,11 @@ function initAuthGateway() {
                 // Highlight active quick pill on login card if opened
                 highlightActiveAdminPill(email);
 
+                // Start real-time presence heartbeat tracking
+                if (typeof startPresenceTracking === 'function') {
+                    startPresenceTracking(email);
+                }
+
                 // Log sign-in activity (deduplicated by session)
                 const lastSessionLogged = sessionStorage.getItem('lastAuthSessionEmail');
                 if (lastSessionLogged !== email) {
@@ -64,21 +69,28 @@ function initAuthGateway() {
 
                 // Refresh Admin Settings Security Provider Status
                 updateProviderStatusUI(user);
+
+                // Re-render team activity and dashboard
+                if (typeof renderAllSections === 'function') {
+                    renderAllSections();
+                }
             } else {
                 // Unauthorized user attempting access
                 console.warn(`Unauthorized CRM access attempt blocked for: ${userEmail}`);
+                if (typeof stopPresenceTracking === 'function') stopPresenceTracking();
                 await fbManager.auth.signOut();
                 
                 if (authOverlay) authOverlay.style.display = 'flex';
                 if (mainApp) mainApp.style.display = 'none';
                 
                 if (authErrorMsg) {
-                    authErrorMsg.innerHTML = `<strong>Access Denied:</strong> The account <code>${userEmail}</code> is not an authorized administrator. Access is restricted to site owners only.`;
+                    authErrorMsg.innerHTML = `<strong>Access Denied:</strong> The account <code>${userEmail}</code> is not an authorized administrator. Access is restricted to authorized administrators only.`;
                     authErrorMsg.style.display = 'block';
                 }
             }
         } else {
             // Signed out state
+            if (typeof stopPresenceTracking === 'function') stopPresenceTracking();
             if (authOverlay) authOverlay.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
 
@@ -293,6 +305,9 @@ function initAuthGateway() {
         if (btn) {
             btn.addEventListener('click', () => {
                 const currentEmail = fbManager.auth.currentUser ? fbManager.auth.currentUser.email : 'Unknown';
+                if (typeof stopPresenceTracking === 'function') {
+                    stopPresenceTracking();
+                }
                 logActivity('auth', 'Sign Out', `${getTeamMemberName(currentEmail)} signed out`, currentEmail);
                 fbManager.auth.signOut();
             });

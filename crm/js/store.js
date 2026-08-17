@@ -6,7 +6,8 @@ class ProductionHubStore {
             customers: [],
             sales: [],
             followups: [],
-            activityLogs: []
+            activityLogs: [],
+            teamPresence: {}
         };
         this.isCloudConnected = false;
         this.unsubscribers = [];
@@ -16,7 +17,15 @@ class ProductionHubStore {
         const stored = localStorage.getItem(this.STORAGE_KEY);
         if (stored) {
             try {
-                this.data = JSON.parse(stored);
+                const parsed = JSON.parse(stored);
+                this.data = {
+                    products: parsed.products || [],
+                    customers: parsed.customers || [],
+                    sales: parsed.sales || [],
+                    followups: parsed.followups || [],
+                    activityLogs: parsed.activityLogs || [],
+                    teamPresence: parsed.teamPresence || {}
+                };
             } catch (e) {
                 console.error("Cache read error:", e);
             }
@@ -35,7 +44,7 @@ class ProductionHubStore {
 
         const db = fbManager.db;
         if (!db) return;
-        const collections = ['products', 'customers', 'sales', 'followups', 'activity_logs'];
+        const collections = ['products', 'customers', 'sales', 'followups', 'activity_logs', 'team_presence'];
 
         // Clear existing listeners
         this.unsubscribers.forEach(unsub => typeof unsub === 'function' && unsub());
@@ -60,14 +69,26 @@ class ProductionHubStore {
                         this.updateConnBadge(false, "Local Offline");
                     }
 
-                    const items = [];
-                    snapshot.forEach(doc => {
-                        items.push({ id: doc.id, ...doc.data() });
-                    });
-
-                    if (col === 'activity_logs') {
+                    if (col === 'team_presence') {
+                        const presenceMap = {};
+                        snapshot.forEach(doc => {
+                            const d = doc.data();
+                            if (d && d.email) {
+                                presenceMap[d.email.toLowerCase().trim()] = { id: doc.id, ...d };
+                            }
+                        });
+                        this.data.teamPresence = { ...this.data.teamPresence, ...presenceMap };
+                    } else if (col === 'activity_logs') {
+                        const items = [];
+                        snapshot.forEach(doc => {
+                            items.push({ id: doc.id, ...doc.data() });
+                        });
                         this.data.activityLogs = items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                     } else {
+                        const items = [];
+                        snapshot.forEach(doc => {
+                            items.push({ id: doc.id, ...doc.data() });
+                        });
                         this.data[col] = items;
                     }
                     this.saveLocalCache();

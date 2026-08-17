@@ -378,6 +378,16 @@ function switchToSection(sectionId) {
     if (sidebar) sidebar.classList.remove('active');
     if (overlay) overlay.classList.remove('active');
 
+    // Trigger section-specific re-renders
+    if (sectionId === 'team-activity' && typeof renderTeamActivity === 'function') {
+        renderTeamActivity();
+    }
+
+    // Touch presence
+    if (typeof touchPresence === 'function') {
+        touchPresence('Viewing ' + sectionId);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

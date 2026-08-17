@@ -1,9 +1,9 @@
-// Everyday Supply Co. - Team & Activity Logging Module
+// Everyday Supply Co. - Team & Activity Logging Module with Real-Time Presence
 
 const TEAM_MEMBERS = {
-    'mthembuavuyile@gmail.com': { name: 'Avuyile', role: 'Owner / Lead Admin', color: '#0f766e' },
-    'asandamanelisi1998@gmail.com': { name: 'Asanda', role: 'Team Member', color: '#7c3aed' },
-    'ayandalucasn@gmail.com': { name: 'Ayanda', role: 'Team Member', color: '#2563eb' }
+    'mthembuavuyile@gmail.com': { name: 'Avuyile', role: 'Administrator', color: '#0f766e' },
+    'asandamanelisi1998@gmail.com': { name: 'Asanda', role: 'Administrator', color: '#7c3aed' },
+    'ayandalucasn@gmail.com': { name: 'Ayanda', role: 'Administrator', color: '#2563eb' }
 };
 
 const CATEGORY_META = {
@@ -24,7 +24,7 @@ function getTeamMember(email) {
         return TEAM_MEMBERS[cleanEmail];
     }
     // Dynamic member fallback
-    const rawName = cleanEmail.split('@')[0] || 'User';
+    const rawName = cleanEmail.split('@')[0] || 'Admin';
     const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1).replace(/[._-]/g, ' ');
     let colorHash = 0;
     for (let i = 0; i < cleanEmail.length; i++) {
@@ -32,7 +32,7 @@ function getTeamMember(email) {
     }
     return {
         name: formattedName,
-        role: 'Team Member',
+        role: 'Administrator',
         color: AVATAR_COLORS[colorHash]
     };
 }
@@ -63,6 +63,114 @@ function formatTimeAgo(timestamp) {
     return date.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' });
 }
 
+// --- REAL-TIME PRESENCE & HEARTBEAT SYSTEM ---
+let presenceHeartbeatTimer = null;
+let presenceUiRefreshTimer = null;
+let lastPresenceTouch = 0;
+
+function getPresenceDocId(email) {
+    return (email || '').toLowerCase().trim().replace(/[@.]/g, '_');
+}
+
+function updatePresence(status = 'online', action = 'Active in Dashboard') {
+    let email = '';
+    if (window.fbManager && fbManager.auth && fbManager.auth.currentUser && fbManager.auth.currentUser.email) {
+        email = fbManager.auth.currentUser.email;
+    } else {
+        email = localStorage.getItem('lastUserEmail');
+    }
+    if (!email) return;
+    email = email.toLowerCase().trim();
+
+    const now = Date.now();
+    const docId = getPresenceDocId(email);
+    const member = getTeamMember(email);
+
+    const presenceData = {
+        email: email,
+        name: member.name,
+        role: member.role,
+        status: status,
+        lastSeen: now,
+        lastSeenISO: new Date().toISOString(),
+        lastAction: action
+    };
+
+    // Update local cache immediately
+    if (window.store && store.data) {
+        if (!store.data.teamPresence) store.data.teamPresence = {};
+        store.data.teamPresence[email] = presenceData;
+        store.saveLocalCache();
+    }
+
+    // Persist to Firestore if authenticated
+    if (window.fbManager && fbManager.db && fbManager.auth && fbManager.auth.currentUser) {
+        fbManager.db.collection('team_presence').doc(docId).set(presenceData, { merge: true }).catch(err => {
+            console.warn("Presence sync note:", err.message);
+        });
+    }
+}
+
+function touchPresence(action = 'Active in Dashboard') {
+    const now = Date.now();
+    // Throttle user interaction touches to once every 20 seconds
+    if (now - lastPresenceTouch > 20000) {
+        lastPresenceTouch = now;
+        updatePresence('online', action);
+    }
+}
+
+function startPresenceTracking(email) {
+    if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+    if (presenceUiRefreshTimer) clearInterval(presenceUiRefreshTimer);
+
+    // Immediate initial presence heartbeat
+    updatePresence('online', 'Dashboard Access');
+
+    // Heartbeat every 30 seconds while window is active
+    presenceHeartbeatTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            updatePresence('online', 'Active in Dashboard');
+        }
+    }, 30000);
+
+    // Auto-refresh team activity UI every 25 seconds to update relative times & online statuses
+    presenceUiRefreshTimer = setInterval(() => {
+        const teamSec = byId('team-activity');
+        if (teamSec && teamSec.classList.contains('active')) {
+            renderTeamActivity();
+        }
+    }, 25000);
+
+    // Listen to user interactions to touch presence
+    ['click', 'keydown', 'scroll', 'touchstart'].forEach(evtType => {
+        window.addEventListener(evtType, () => touchPresence('Active in Dashboard'), { passive: true });
+    });
+
+    // Handle visibility changes (e.g. switching tabs / minimizing)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updatePresence('online', 'Active in Dashboard');
+            renderTeamActivity();
+        } else {
+            updatePresence('idle', 'Away');
+        }
+    });
+
+    // Handle window beforeunload
+    window.addEventListener('beforeunload', () => {
+        updatePresence('offline', 'Closed session');
+    });
+}
+
+function stopPresenceTracking() {
+    if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+    if (presenceUiRefreshTimer) clearInterval(presenceUiRefreshTimer);
+    presenceHeartbeatTimer = null;
+    presenceUiRefreshTimer = null;
+    updatePresence('offline', 'Signed out');
+}
+
 // --- CORE ACTIVITY LOGGING ---
 
 function logActivity(type, action, details, userEmail = null) {
@@ -86,6 +194,9 @@ function logActivity(type, action, details, userEmail = null) {
         user: email,
         timestamp: timestamp
     };
+
+    // Touch presence with this action
+    updatePresence('online', `${action}: ${details || ''}`);
 
     // Optimistically update local store immediately
     if (window.store && store.data) {
@@ -131,15 +242,32 @@ let currentActivityLogLimit = 20;
 
 function renderTeamActivity() {
     const logs = (window.store && store.data && store.data.activityLogs) ? store.data.activityLogs : [];
-    const currentAuthEmail = (window.fbManager && fbManager.auth && fbManager.auth.currentUser)
-        ? (fbManager.auth.currentUser.email || '').toLowerCase().trim()
-        : '';
+    const teamPresence = (window.store && store.data && store.data.teamPresence) ? store.data.teamPresence : {};
+    
+    // Resolve current authenticated email
+    let currentAuthEmail = '';
+    if (window.fbManager && fbManager.auth && fbManager.auth.currentUser && fbManager.auth.currentUser.email) {
+        currentAuthEmail = fbManager.auth.currentUser.email.toLowerCase().trim();
+    } else {
+        currentAuthEmail = (localStorage.getItem('lastUserEmail') || '').toLowerCase().trim();
+    }
 
-    // 1. Gather all known members (predefined + any seen in activity logs)
+    // 1. Gather all known members (predefined + presence + logs)
     const allMembersMap = { ...TEAM_MEMBERS };
+    
+    Object.keys(teamPresence).forEach(email => {
+        const cleanEmail = email.toLowerCase().trim();
+        if (!allMembersMap[cleanEmail]) {
+            allMembersMap[cleanEmail] = getTeamMember(cleanEmail);
+        }
+    });
+
     logs.forEach(log => {
-        if (log.user && !allMembersMap[log.user.toLowerCase()]) {
-            allMembersMap[log.user.toLowerCase()] = getTeamMember(log.user);
+        if (log.user) {
+            const cleanUser = log.user.toLowerCase().trim();
+            if (!allMembersMap[cleanUser]) {
+                allMembersMap[cleanUser] = getTeamMember(cleanUser);
+            }
         }
     });
 
@@ -151,28 +279,50 @@ function renderTeamActivity() {
         const now = Date.now();
 
         Object.entries(allMembersMap).forEach(([email, data]) => {
-            // Find most recent activity for this member
-            const memberLogs = logs.filter(l => (l.user || '').toLowerCase() === email);
-            const latestLog = memberLogs.length > 0 ? memberLogs[0] : null;
-            const lastActiveTime = latestLog ? new Date(latestLog.timestamp).getTime() : 0;
-            const isCurrentUser = currentAuthEmail && currentAuthEmail === email;
+            const cleanEmail = email.toLowerCase().trim();
+            const isCurrentUser = Boolean(currentAuthEmail && currentAuthEmail === cleanEmail);
             
-            // Mark online if logged in right now or active within last 15 minutes
-            const isRecentlyActive = lastActiveTime > 0 && (now - lastActiveTime < 15 * 60 * 1000);
-            const isOnline = isCurrentUser || isRecentlyActive;
+            // Presence data
+            const presence = teamPresence[cleanEmail] || {};
+            const presenceLastSeen = presence.lastSeen ? Number(presence.lastSeen) : 0;
+            const presenceStatus = presence.status || 'offline';
+
+            // Logs data
+            const memberLogs = logs.filter(l => (l.user || '').toLowerCase().trim() === cleanEmail);
+            const latestLog = memberLogs.length > 0 ? memberLogs[0] : null;
+            const logLastActiveTime = latestLog ? new Date(latestLog.timestamp).getTime() : 0;
+
+            const lastActiveTime = Math.max(presenceLastSeen, logLastActiveTime);
+
+            // Online threshold:
+            // - Current user in active dashboard: Always Online
+            // - Other member with heartbeat or activity in last 5 minutes: Online
+            // - Other member active in last 20 minutes: Active recently
+            const isWithin5Min = lastActiveTime > 0 && (now - lastActiveTime < 5 * 60 * 1000);
+            const isWithin20Min = lastActiveTime > 0 && (now - lastActiveTime < 20 * 60 * 1000);
+            
+            const isOnline = isCurrentUser || (isWithin5Min && presenceStatus !== 'offline');
+            const isRecent = !isOnline && (isWithin20Min || (isWithin5Min && presenceStatus === 'idle'));
 
             if (isOnline) onlineCount++;
 
             let statusText = 'Offline';
             let statusDotClass = 'status-dot-offline';
+            let lastActionText = presence.lastAction || (latestLog ? `${latestLog.action}: ${latestLog.details}` : '');
+
             if (isCurrentUser) {
                 statusText = 'Online Now (You)';
                 statusDotClass = 'status-dot-online';
-            } else if (isRecentlyActive) {
+                if (!lastActionText) lastActionText = 'Active in Dashboard';
+            } else if (isOnline) {
+                statusText = 'Online Now';
+                statusDotClass = 'status-dot-online';
+            } else if (isRecent) {
                 statusText = 'Active recently';
                 statusDotClass = 'status-dot-online';
-            } else if (latestLog) {
-                statusText = `Active ${formatTimeAgo(latestLog.timestamp)}`;
+            } else if (lastActiveTime > 0) {
+                statusText = `Active ${formatTimeAgo(lastActiveTime)}`;
+                statusDotClass = 'status-dot-offline';
             }
 
             const card = document.createElement('div');
@@ -187,12 +337,12 @@ function renderTeamActivity() {
                         <span class="team-member-name">${escapeHtml(data.name)}</span>
                         ${isCurrentUser ? '<span class="badge badge-you">You</span>' : ''}
                     </div>
-                    <div class="team-member-role">${escapeHtml(data.role || 'Team Member')}</div>
+                    <div class="team-member-role">${escapeHtml(data.role || 'Administrator')}</div>
                     <div class="team-member-status-line">
                         <span class="team-presence-label ${isOnline ? 'text-online' : 'text-offline'}">${statusText}</span>
                     </div>
-                    ${latestLog ? `<div class="team-member-latest-action" title="${escapeHtml(latestLog.action + ': ' + latestLog.details)}">
-                        <strong>Last action:</strong> ${escapeHtml(latestLog.action)}
+                    ${lastActionText ? `<div class="team-member-latest-action" title="${escapeHtml(lastActionText)}">
+                        <strong>Last action:</strong> ${escapeHtml(lastActionText)}
                     </div>` : ''}
                 </div>
             `;
@@ -463,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
+            updatePresence('online', 'Manual Refresh');
             renderTeamActivity();
             showToast("Team activity updated", "info");
         });
