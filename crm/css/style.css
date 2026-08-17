@@ -1847,10 +1847,133 @@ body {
     border: 1px solid #ddd6fe;
 }
 
+.badge-security {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
 .badge-settings {
     background-color: #f1f5f9;
     color: #334155;
     border: 1px solid #e2e8f0;
+}
+
+/* Security Severity Badges */
+.badge-sec-danger {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.badge-sec-warning {
+    background-color: #f59e0b;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.badge-sec-info {
+    background-color: #0284c7;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.sec-inspect-pill {
+    padding: 4px 9px !important;
+    font-size: 11px !important;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: var(--white);
+    border: 1px solid var(--slate-300);
+    color: var(--slate-700);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.sec-inspect-pill:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+/* Telemetry Inspector Grid & Boxes */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+@media (max-width: 520px) {
+    .telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.telemetry-item {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.telemetry-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--slate-500);
+    margin-bottom: 3px;
+    letter-spacing: 0.03em;
+}
+
+.telemetry-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-900);
+    word-break: break-word;
+}
+
+.telemetry-ua-box {
+    background: var(--slate-900);
+    color: #94a3b8;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    line-height: 1.4;
+    word-break: break-all;
+    max-height: 70px;
+    overflow-y: auto;
+}
+
+.telemetry-json-pre {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--slate-800);
+    background: var(--white);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 8px;
 }
 
 /* Table Member Cell */

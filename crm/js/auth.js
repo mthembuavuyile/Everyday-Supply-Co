@@ -184,6 +184,9 @@ function initAuthGateway() {
                     authErrorMsg.innerHTML = `<strong>Access Restricted:</strong> <code>${email || 'This address'}</code> is not an authorized administrator.`;
                     authErrorMsg.style.display = 'block';
                 }
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('auth-blocked', email, 'Unauthorized login attempt blocked by whitelist guard', 'danger');
+                }
                 return;
             }
 
@@ -191,19 +194,34 @@ function initAuthGateway() {
 
             try {
                 await fbManager.auth.signInWithEmailAndPassword(email, password);
-                // onAuthStateChanged will handle redirection and setup
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('auth-success', email, 'Administrator password sign-in verified', 'info');
+                }
             } catch (err) {
                 console.error("Auth error:", err);
                 let message = "Invalid login credentials. Please check your password.";
 
                 if (err.code === 'auth/user-not-found') {
                     message = `No password login found for this account. If you originally signed in with Google, click <strong>"Forgot / Set Password?"</strong> above or use <strong>"Sign in with Google"</strong>.`;
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('failed-login', email, 'Sign-in failed: Account not registered with password', 'warning');
+                    }
                 } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
                     message = `Incorrect password. If you need to reset or create a password, click <strong>"Forgot / Set Password?"</strong>.`;
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('failed-password', email, 'Incorrect password entered', 'warning');
+                    }
                 } else if (err.code === 'auth/too-many-requests') {
                     message = "Access temporarily locked due to multiple failed attempts. Please reset your password or wait a few minutes.";
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('suspicious', email, 'Access temporarily locked due to multiple failed login attempts', 'danger');
+                    }
                 } else if (err.code === 'auth/network-request-failed') {
                     message = "Network error. Please check your internet connection.";
+                } else {
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('failed-login', email, `Authentication error: ${err.code || err.message}`, 'warning');
+                    }
                 }
 
                 if (authErrorMsg) {
@@ -230,10 +248,17 @@ function initAuthGateway() {
                 const signedEmail = (result.user.email || '').toLowerCase().trim();
 
                 if (!isAllowedAdminEmail(signedEmail)) {
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('google-blocked', signedEmail, 'Unauthorized Google account attempted CRM access', 'danger');
+                    }
                     await fbManager.auth.signOut();
                     if (authErrorMsg) {
                         authErrorMsg.innerHTML = `<strong>Access Denied:</strong> Google account <code>${signedEmail}</code> is not authorized for Everyday Supply CRM.`;
                         authErrorMsg.style.display = 'block';
+                    }
+                } else {
+                    if (window.SecurityTracker) {
+                        SecurityTracker.logSecurityEvent('auth-success', signedEmail, 'Authorized administrator Google sign-in verified', 'info');
                     }
                 }
             } catch (err) {
@@ -245,6 +270,10 @@ function initAuthGateway() {
                 let message = "Google Sign-in failed: " + err.message;
                 if (err.code === 'auth/account-exists-with-different-credential') {
                     message = "An account already exists with this email address. Please sign in with your email & password.";
+                }
+
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('failed-login', 'Google Auth', `Google sign-in error: ${err.code || err.message}`, 'warning');
                 }
 
                 if (authErrorMsg) {
@@ -270,6 +299,9 @@ function initAuthGateway() {
                     resetErrorMsg.innerHTML = `<strong>Access Restricted:</strong> <code>${email || 'This address'}</code> is not an authorized administrator.`;
                     resetErrorMsg.style.display = 'block';
                 }
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('auth-blocked', email, 'Unauthorized password reset request blocked', 'danger');
+                }
                 return;
             }
 
@@ -284,11 +316,17 @@ function initAuthGateway() {
                 }
 
                 logActivity('auth', 'Password Reset Request', `Requested password setup link for ${email}`, email);
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('password-reset', email, 'Password setup / reset email link dispatched', 'info');
+                }
             } catch (err) {
                 console.error("Password reset error:", err);
                 if (resetErrorMsg) {
                     resetErrorMsg.textContent = "Failed to send reset email: " + (err.message || 'Please try again.');
                     resetErrorMsg.style.display = 'block';
+                }
+                if (window.SecurityTracker) {
+                    SecurityTracker.logSecurityEvent('failed-login', email, `Password reset failure: ${err.message}`, 'warning');
                 }
             } finally {
                 setButtonLoading(resetSubmitBtn, false, 'Send Password Setup / Reset Link');

@@ -7,7 +7,8 @@ class ProductionHubStore {
             sales: [],
             followups: [],
             activityLogs: [],
-            teamPresence: {}
+            teamPresence: {},
+            securityLogs: []
         };
         this.isCloudConnected = false;
         this.unsubscribers = [];
@@ -24,7 +25,8 @@ class ProductionHubStore {
                     sales: parsed.sales || [],
                     followups: parsed.followups || [],
                     activityLogs: parsed.activityLogs || [],
-                    teamPresence: parsed.teamPresence || {}
+                    teamPresence: parsed.teamPresence || {},
+                    securityLogs: parsed.securityLogs || []
                 };
             } catch (e) {
                 console.error("Cache read error:", e);
@@ -44,7 +46,7 @@ class ProductionHubStore {
 
         const db = fbManager.db;
         if (!db) return;
-        const collections = ['products', 'customers', 'sales', 'followups', 'activity_logs', 'team_presence'];
+        const collections = ['products', 'customers', 'sales', 'followups', 'activity_logs', 'team_presence', 'security_logs'];
 
         // Clear existing listeners
         this.unsubscribers.forEach(unsub => typeof unsub === 'function' && unsub());
@@ -78,6 +80,15 @@ class ProductionHubStore {
                             }
                         });
                         this.data.teamPresence = { ...this.data.teamPresence, ...presenceMap };
+                    } else if (col === 'security_logs') {
+                        const items = [];
+                        snapshot.forEach(doc => {
+                            items.push({ id: doc.id, ...doc.data() });
+                        });
+                        this.data.securityLogs = items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        if (window.SecurityTracker) {
+                            SecurityTracker.updateSecurityStatsUI();
+                        }
                     } else if (col === 'activity_logs') {
                         const items = [];
                         snapshot.forEach(doc => {

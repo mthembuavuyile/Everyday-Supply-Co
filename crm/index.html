@@ -23,6 +23,7 @@
     
     <!-- Application Logic (Separation of Concerns) -->
     <script src="js/utils.js" defer></script>
+    <script src="js/security.js" defer></script>
     <script src="js/activity.js" defer></script>
     <script src="js/store.js" defer></script>
     <script src="js/ui.js" defer></script>
@@ -777,11 +778,12 @@
                             </div>
                             <select id="activityFilterType" class="activity-filter-select">
                                 <option value="all">All Actions</option>
+                                <option value="security">Security & Access Audits</option>
+                                <option value="auth">Logins & Auth</option>
                                 <option value="sale">Sales Orders</option>
                                 <option value="product">Stock & Products</option>
                                 <option value="customer">Customers</option>
                                 <option value="followup">Follow-ups</option>
-                                <option value="auth">Logins & Auth</option>
                                 <option value="settings">Settings</option>
                             </select>
                             <select id="activityFilterUser" class="activity-filter-select">
@@ -928,7 +930,7 @@
                                 <div class="form-group" style="margin: 0;">
                                     <label style="font-size: 12px;">New Password (min 6 characters)</label>
                                     <div class="password-input-wrapper">
-                                        <input type="password" id="settingsNewPassword" placeholder="••••••••" minlength="6" required>
+                                        <input type="password" id="settingsNewPassword" placeholder="••••••••" minlength="6" autocomplete="new-password" required>
                                         <button type="button" class="password-toggle-btn" id="toggleSettingsNewPassBtn" tabindex="-1">
                                             <svg class="icon icon-sm eye-icon" viewBox="0 0 24 24">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -941,7 +943,7 @@
                                 <div class="form-group" style="margin: 0;">
                                     <label style="font-size: 12px;">Confirm New Password</label>
                                     <div class="password-input-wrapper">
-                                        <input type="password" id="settingsConfirmPassword" placeholder="••••••••" minlength="6" required>
+                                        <input type="password" id="settingsConfirmPassword" placeholder="••••••••" minlength="6" autocomplete="new-password" required>
                                         <button type="button" class="password-toggle-btn" id="toggleSettingsConfirmPassBtn" tabindex="-1">
                                             <svg class="icon icon-sm eye-icon" viewBox="0 0 24 24">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -994,6 +996,40 @@
                         </p>
                     </div>
                 </div>
+
+                <!-- Security & Access Telemetry Monitor Card -->
+                <div class="card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+                            <svg class="icon" viewBox="0 0 24 24" style="color: var(--danger);">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            <span>Security & Access Telemetry Monitor</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="switchToSection('team-activity'); setTimeout(() => { const sel = byId('activityFilterType'); if(sel) { sel.value='security'; sel.dispatchEvent(new Event('change')); }}, 150);">
+                            View Live Audits →
+                        </button>
+                    </div>
+                    <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+                        <p style="margin: 0; font-size: 13px; color: var(--slate-600);">
+                            Real-time detection of unauthorized login attempts, failed passwords, account setup requests, and IP forensic telemetry.
+                        </p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 12px;">
+                                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--slate-500);">Total Access Audits</div>
+                                <div style="font-size: 22px; font-weight: 800; color: var(--slate-900); margin-top: 4px;" id="secStatTotalAudits">0</div>
+                            </div>
+                            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 12px;">
+                                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #991b1b;">Blocked Threat Attempts</div>
+                                <div style="font-size: 22px; font-weight: 800; color: var(--danger); margin-top: 4px;" id="secStatBlocked">0</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: var(--slate-500); display: flex; align-items: center; gap: 6px;">
+                            <span class="status-dot status-dot-online" style="width: 8px; height: 8px;"></span>
+                            <span>Client forensic telemetry (IP, Location, ISP, Device) actively running.</span>
+                        </div>
+                    </div>
+                </div>
             </section>
 
         </main>
@@ -1038,15 +1074,15 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>Full Name *</label>
-                            <input type="text" id="custName" name="name" placeholder="e.g. Sipho Ndlovu" required>
+                            <input type="text" id="custName" name="name" placeholder="e.g. Sipho Ndlovu" autocomplete="name" required>
                         </div>
                         <div class="form-group">
                             <label>Phone / WhatsApp Number *</label>
-                            <input type="tel" id="custPhone" name="phone" placeholder="e.g. 0821234567" required>
+                            <input type="tel" id="custPhone" name="phone" placeholder="e.g. 0821234567" autocomplete="tel" required>
                         </div>
                         <div class="form-group">
                             <label>Residence / Area *</label>
-                            <input type="text" id="custArea" name="area" placeholder="e.g. Soweto, Sandton..." required>
+                            <input type="text" id="custArea" name="area" placeholder="e.g. Soweto, Sandton..." autocomplete="address-level2" required>
                         </div>
                         <div class="form-group full-width">
                             <label>Customer Status</label>
@@ -1370,6 +1406,93 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmModalActionBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Telemetry Forensic Inspector Modal -->
+    <div class="modal" id="securityInspectModal">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #fee2e2; color: var(--danger); display: flex; align-items: center; justify-content: center;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 id="secInspectTitle" style="font-size: 17px; margin: 0; font-weight: 800; color: var(--slate-900);">Security Telemetry Inspector</h2>
+                        <span id="secInspectRelativeTime" style="font-size: 11px; color: var(--slate-400);">Timestamp</span>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeModal('securityInspectModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- Threat & Identity Row -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--slate-50); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); margin-bottom: 16px;">
+                    <div>
+                        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--slate-500); display: block; letter-spacing: 0.03em;">Target Account / Identifier</span>
+                        <strong id="secInspectEmail" style="font-size: 14px; color: var(--slate-900);">unknown@example.com</strong>
+                    </div>
+                    <span id="secInspectSeverityBadge" class="badge badge-sec-danger">DANGER</span>
+                </div>
+
+                <!-- Event Details Box -->
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--slate-500); display: block; margin-bottom: 4px;">Incident Details</span>
+                    <div id="secInspectDetails" style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--slate-700); line-height: 1.4;"></div>
+                </div>
+
+                <!-- Telemetry Technical Grid -->
+                <div class="telemetry-grid">
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">IP Address</span>
+                        <div class="telemetry-value" id="secInspectIp" style="font-family: monospace; font-weight: 700;">102.x.x.x</div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Geographic Location</span>
+                        <div class="telemetry-value" id="secInspectLocation">Johannesburg, South Africa</div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Network / ISP Provider</span>
+                        <div class="telemetry-value" id="secInspectOrg">Network Provider</div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Operating System & Device</span>
+                        <div class="telemetry-value" id="secInspectOs">Windows 11 (Desktop)</div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Browser Engine</span>
+                        <div class="telemetry-value" id="secInspectBrowser">Google Chrome</div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Screen & Locale</span>
+                        <div class="telemetry-value" id="secInspectScreen">1920x1080 · en-ZA</div>
+                    </div>
+                </div>
+
+                <!-- Exact Timestamp -->
+                <div style="margin-top: 14px; font-size: 11px; color: var(--slate-500); display: flex; align-items: center; gap: 6px;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Exact Recorded Time: <strong id="secInspectTime" style="color: var(--slate-700);"></strong></span>
+                </div>
+
+                <!-- Full User Agent -->
+                <div style="margin-top: 12px;">
+                    <span class="telemetry-label">User Agent String</span>
+                    <div id="secInspectUserAgent" class="telemetry-ua-box"></div>
+                </div>
+
+                <!-- Raw JSON Collapse -->
+                <details style="margin-top: 14px; border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 8px 12px; background: var(--slate-50);">
+                    <summary style="font-size: 12px; font-weight: 600; color: var(--slate-600); cursor: pointer;">View Raw JSON Telemetry Payload</summary>
+                    <pre id="secInspectRawJson" class="telemetry-json-pre"></pre>
+                </details>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between;">
+                <button type="button" class="btn btn-secondary" onclick="SecurityTracker.copyTelemetryJSON()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy JSON</span>
+                </button>
+                <button type="button" class="btn btn-primary" onclick="closeModal('securityInspectModal')">Close Inspector</button>
             </div>
         </div>
     </div>

@@ -12,6 +12,7 @@ const CATEGORY_META = {
     'customer': { label: 'Customer', badgeClass: 'badge-customer', color: '#2563eb', icon: 'user' },
     'followup': { label: 'Follow-up', badgeClass: 'badge-followup', color: '#db2777', icon: 'calendar' },
     'auth': { label: 'Security / Auth', badgeClass: 'badge-auth', color: '#7c3aed', icon: 'shield' },
+    'security': { label: 'Security / Audit', badgeClass: 'badge-security', color: '#dc2626', icon: 'shield' },
     'settings': { label: 'System', badgeClass: 'badge-settings', color: '#475569', icon: 'settings' }
 };
 
@@ -379,7 +380,11 @@ function renderTeamActivity() {
     let filteredLogs = [...logs];
 
     if (filterType !== 'all') {
-        filteredLogs = filteredLogs.filter(log => log.type === filterType);
+        if (filterType === 'security' || filterType === 'auth') {
+            filteredLogs = filteredLogs.filter(log => log.type === 'security' || log.type === 'auth' || log.isSecurityEvent || (log.id && log.id.startsWith('SEC-')));
+        } else {
+            filteredLogs = filteredLogs.filter(log => log.type === filterType);
+        }
     }
     if (filterUser !== 'all') {
         filteredLogs = filteredLogs.filter(log => (log.user || '').toLowerCase() === filterUser.toLowerCase());
@@ -438,7 +443,9 @@ function renderTeamActivity() {
                 const timeFormatted = isValidDate ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                 const relativeTime = isValidDate ? formatTimeAgo(log.timestamp) : '';
                 const memberData = getTeamMember(log.user);
-                const meta = CATEGORY_META[log.type] || { label: log.type || 'Action', badgeClass: 'badge-inactive', color: '#64748b' };
+                const isSec = Boolean(log.isSecurityEvent || log.type === 'security' || log.telemetry || (log.id && log.id.startsWith('SEC-')) || log.type === 'auth');
+                const effectiveType = (isSec && log.severity === 'danger') ? 'security' : (log.type || 'generic');
+                const meta = CATEGORY_META[effectiveType] || { label: log.type || 'Action', badgeClass: 'badge-inactive', color: '#64748b' };
 
                 tr.innerHTML = `
                     <td style="white-space: nowrap;">
@@ -466,11 +473,21 @@ function renderTeamActivity() {
                         </span>
                     </td>
                     <td>
-                        <div style="font-weight: 600; color: var(--slate-900); font-size: 13px; margin-bottom: 2px;">
-                            ${escapeHtml(log.action || 'Activity')}
-                        </div>
-                        <div style="font-size: 12px; color: var(--slate-600); line-height: 1.4;">
-                            ${escapeHtml(log.details || '')}
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+                            <div>
+                                <div style="font-weight: 600; color: var(--slate-900); font-size: 13px; margin-bottom: 2px;">
+                                    ${escapeHtml(log.action || 'Activity')}
+                                </div>
+                                <div style="font-size: 12px; color: var(--slate-600); line-height: 1.4;">
+                                    ${escapeHtml(log.details || '')}
+                                </div>
+                            </div>
+                            ${isSec ? `
+                                <button type="button" class="btn btn-sm btn-secondary sec-inspect-pill" data-inspect-sec="${log.securityId || log.id}" title="Inspect Security & Telemetry Details">
+                                    <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: var(--primary);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                    <span>Telemetry</span>
+                                </button>
+                            ` : ''}
                         </div>
                     </td>
                 `;
@@ -487,10 +504,12 @@ function renderTeamActivity() {
                 const relativeTime = isValidDate ? formatTimeAgo(log.timestamp) : 'Recently';
                 const timeFormatted = isValidDate ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                 const memberData = getTeamMember(log.user);
-                const meta = CATEGORY_META[log.type] || { label: log.type || 'Action', badgeClass: 'badge-inactive', color: '#64748b' };
+                const isSec = Boolean(log.isSecurityEvent || log.type === 'security' || log.telemetry || (log.id && log.id.startsWith('SEC-')) || log.type === 'auth');
+                const effectiveType = (isSec && log.severity === 'danger') ? 'security' : (log.type || 'generic');
+                const meta = CATEGORY_META[effectiveType] || { label: log.type || 'Action', badgeClass: 'badge-inactive', color: '#64748b' };
 
                 const card = document.createElement('div');
-                card.className = `activity-timeline-card type-${log.type || 'generic'}`;
+                card.className = `activity-timeline-card type-${effectiveType}`;
                 card.innerHTML = `
                     <div class="activity-card-header-mobile">
                         <div class="activity-card-member">
@@ -505,7 +524,15 @@ function renderTeamActivity() {
                         </div>
                     </div>
                     <div class="activity-card-body">
-                        <div class="activity-card-action-title">${escapeHtml(log.action || 'Activity')}</div>
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+                            <div class="activity-card-action-title">${escapeHtml(log.action || 'Activity')}</div>
+                            ${isSec ? `
+                                <button type="button" class="btn btn-sm btn-secondary sec-inspect-pill" data-inspect-sec="${log.securityId || log.id}" title="Inspect Security & Telemetry">
+                                    <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: var(--primary);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                    <span>Inspect</span>
+                                </button>
+                            ` : ''}
+                        </div>
                         <div class="activity-card-details">${escapeHtml(log.details || '')}</div>
                     </div>
                 `;
