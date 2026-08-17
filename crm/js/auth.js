@@ -46,8 +46,6 @@ function initAuthGateway() {
                 if (byId('settingsEmailDisplay')) byId('settingsEmailDisplay').textContent = email;
                 if (byId('settingsAvatar')) byId('settingsAvatar').textContent = email.charAt(0).toUpperCase();
 
-                // Highlight active quick pill on login card if opened
-                highlightActiveAdminPill(email);
 
                 // Start real-time presence heartbeat tracking
                 if (typeof startPresenceTracking === 'function') {
@@ -99,41 +97,9 @@ function initAuthGateway() {
             if (savedEmail && isAllowedAdminEmail(savedEmail)) {
                 if (byId('loginEmail')) byId('loginEmail').value = savedEmail;
                 if (byId('resetEmail')) byId('resetEmail').value = savedEmail;
-                highlightActiveAdminPill(savedEmail);
             }
         }
     });
-
-    // --- 2. QUICK ADMIN SELECTOR PILLS ---
-    const adminPills = document.querySelectorAll('.admin-pill');
-    adminPills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            const email = pill.dataset.email;
-            if (email) {
-                if (byId('loginEmail')) byId('loginEmail').value = email;
-                if (byId('resetEmail')) byId('resetEmail').value = email;
-                highlightActiveAdminPill(email);
-                
-                if (authErrorMsg) authErrorMsg.style.display = 'none';
-                if (resetErrorMsg) resetErrorMsg.style.display = 'none';
-
-                const passInput = byId('loginPassword');
-                if (passInput && authForm && authForm.style.display !== 'none') {
-                    passInput.focus();
-                }
-            }
-        });
-    });
-
-    function highlightActiveAdminPill(email) {
-        adminPills.forEach(pill => {
-            if (pill.dataset.email.toLowerCase() === (email || '').toLowerCase()) {
-                pill.classList.add('active');
-            } else {
-                pill.classList.remove('active');
-            }
-        });
-    }
 
     // --- 3. PASSWORD VISIBILITY TOGGLE ---
     setupPasswordToggle('toggleLoginPasswordBtn', 'loginPassword');

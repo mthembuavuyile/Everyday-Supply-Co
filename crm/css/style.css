@@ -1158,78 +1158,7 @@ body {
     background-color: #22c55e;
 }
 
-/* Quick Admin Selector */
-.admin-quick-select-wrapper {
-    background: var(--slate-50);
-    border: 1px solid var(--slate-200);
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-    margin-bottom: 16px;
-}
 
-.admin-quick-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--slate-500);
-    letter-spacing: 0.03em;
-    margin-bottom: 8px;
-}
-
-.admin-quick-pills {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-}
-
-.admin-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: var(--white);
-    border: 1px solid var(--slate-200);
-    border-radius: var(--radius-sm);
-    padding: 6px 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--slate-700);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    outline: none;
-}
-
-.admin-pill:hover {
-    border-color: var(--primary);
-    background: var(--primary-light);
-    color: var(--primary-dark);
-}
-
-.admin-pill.active {
-    background: var(--primary);
-    border-color: var(--primary-dark);
-    color: var(--white);
-    box-shadow: 0 2px 4px rgba(15, 118, 110, 0.25);
-}
-
-.admin-pill.active .admin-pill-avatar {
-    background: var(--white) !important;
-    color: var(--primary) !important;
-}
-
-.admin-pill-avatar {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 800;
-    flex-shrink: 0;
-}
 
 /* Password Input with Toggle */
 .label-with-action {
@@ -2189,24 +2118,4 @@ body {
         font-size: 19px;
     }
 
-    .admin-quick-select-wrapper {
-        padding: 8px 10px;
-    }
-
-    .admin-quick-pills {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-    }
-
-    .admin-pill {
-        padding: 6px 4px;
-        font-size: 11px;
-        gap: 4px;
-    }
-
-    .admin-pill-avatar {
-        width: 16px;
-        height: 16px;
-        font-size: 9px;
-    }
 }
