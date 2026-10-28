@@ -56,6 +56,7 @@ export function openQuickView(product, onAdd) {
 
     const overlay = document.createElement('div');
     overlay.id = 'quick-view-modal';
+    overlay.className = 'quick-view-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', product.name);
@@ -64,11 +65,10 @@ export function openQuickView(product, onAdd) {
         'inset:0',
         'z-index:8000',
         'display:flex',
-        'align-items:flex-end',
+        'align-items:center',
         'justify-content:center',
         'background:rgba(0,0,0,0)',
         'transition:background 0.28s ease',
-        'padding:0',
     ].join(';');
 
     const isBulk = product.name.toLowerCase().includes('bulk') ||
@@ -80,29 +80,39 @@ export function openQuickView(product, onAdd) {
 
     overlay.innerHTML = `
         <div id="quick-view-sheet"
-             style="width:100%;max-width:480px;background:#fff;border-radius:28px 28px 0 0;
+             style="width:100%;max-width:520px;background:#fff;border-radius:28px;
                     padding:0 0 env(safe-area-inset-bottom,0);
-                    box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+                    box-shadow:0 12px 48px rgba(0,0,0,0.22);
                     transform:translateY(100%);
                     transition:transform 0.35s cubic-bezier(0.34,1.3,0.64,1);
-                    font-family:inherit;overflow:hidden">
+                    font-family:inherit">
             <!-- Drag handle -->
-            <div style="display:flex;justify-content:center;padding:12px 0 0">
+            <div class="qv-drag-handle" style="display:flex;justify-content:center;padding:12px 0 0">
                 <div style="width:40px;height:4px;border-radius:99px;background:#e5e7eb"></div>
             </div>
-            <!-- Image -->
-            <div style="background:#f9fafb;margin:12px 20px 0;border-radius:20px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+            <!-- Image Gallery -->
+            <div class="qv-main-img-wrap" id="qv-main-img-wrap">
                 ${isBulk ? `<div style="position:absolute;top:12px;left:12px">${badge}</div>` : ''}
-                <img src="${product.image}" alt="${product.name}" style="width:75%;height:75%;object-fit:contain" />
+                <img id="qv-main-img" src="${product.image}" alt="${product.name}" />
             </div>
+            ${Array.isArray(product.images) && product.images.length > 1 ? `
+            <div id="qv-thumb-strip" class="qv-thumb-strip" role="group" aria-label="Product images">
+                ${product.images.slice(0,4).map((src, idx) => `
+                    <button type="button" class="qv-thumb${idx === 0 ? ' is-active' : ''}" data-qv-idx="${idx}"
+                            aria-label="Show image ${idx + 1} of ${Math.min(product.images.length, 4)}"
+                            aria-pressed="${idx === 0}">
+                        <img src="${src}" alt="" loading="lazy">
+                    </button>
+                `).join('')}
+            </div>` : ''}
             <!-- Info -->
-            <div style="padding:20px 20px 0">
+            <div class="qv-product-info">
                 <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin:0 0 6px">${product.category}</p>
                 <h2 style="font-size:18px;font-weight:800;color:#111827;line-height:1.3;margin:0 0 10px">${product.name}</h2>
                 <p style="font-size:24px;font-weight:900;color:#111827;margin:0">${moneyZA(product.price)}</p>
             </div>
             <!-- CTA -->
-            <div style="padding:20px">
+            <div class="qv-actions">
                 <button id="quick-view-add-btn"
                     style="width:100%;background:${product.inStock === false ? '#d1d5db' : '#059669'};color:#fff;border:none;border-radius:16px;
                            padding:16px;font-size:16px;font-weight:800;cursor:${product.inStock === false ? 'not-allowed' : 'pointer'};
@@ -124,6 +134,29 @@ export function openQuickView(product, onAdd) {
 
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
+
+    // Quick-view thumbnail strip handler
+    const qvThumbStrip = document.getElementById('qv-thumb-strip');
+    if (qvThumbStrip) {
+        qvThumbStrip.querySelectorAll('[data-qv-idx]').forEach((dot) => {
+            dot.addEventListener('click', () => {
+                const idx = parseInt(dot.dataset.qvIdx);
+                const mainImg = document.getElementById('qv-main-img');
+                if (mainImg && product.images[idx]) {
+                    mainImg.style.opacity = '0';
+                    setTimeout(() => {
+                        mainImg.src = product.images[idx];
+                        mainImg.style.opacity = '1';
+                    }, 180);
+                }
+                qvThumbStrip.querySelectorAll('[data-qv-idx]').forEach((thumb, i) => {
+                    const isActive = i === idx;
+                    thumb.classList.toggle('is-active', isActive);
+                    thumb.setAttribute('aria-pressed', String(isActive));
+                });
+            });
+        });
+    }
 
     // Animate in
     requestAnimationFrame(() => {
@@ -200,17 +233,32 @@ export function renderProducts(gridEl, products, onAdd) {
         const isOutOfStock = p.inStock === false;
         const outOfStockBadge = isOutOfStock ? `<div class="absolute top-2 right-2 z-10 bg-red-100 text-red-700 text-[10px] md:text-xs font-black uppercase tracking-wider px-2 py-1 rounded-lg">Out of Stock</div>` : '';
 
+        const extraImgCount = Array.isArray(p.images) && p.images.length > 1 ? p.images.length - 1 : 0;
+        const thumbStrip = extraImgCount > 0
+            ? `<div class="product-img-thumb-strip" role="group" aria-label="Product images">
+                ${p.images.slice(0,4).map((src, idx) => `
+                    <button type="button" class="product-img-thumb-dot${idx === 0 ? ' is-active' : ''}" data-idx="${idx}"
+                            aria-label="Show image ${idx + 1} of ${Math.min(p.images.length, 4)}"
+                            aria-pressed="${idx === 0}">
+                        <img src="${src}" alt="" loading="lazy">
+                    </button>
+                `).join('')}
+               </div>`
+            : '';
+
         card.innerHTML = `
-            <div class="relative w-full aspect-square bg-gray-50 rounded-xl mb-4 overflow-hidden flex items-center justify-center group-hover:bg-white transition-colors${isOutOfStock ? ' opacity-50' : ''}">
+            <div class="relative w-full aspect-square bg-gray-50 rounded-xl mb-2 overflow-hidden flex items-center justify-center group-hover:bg-white transition-colors${isOutOfStock ? ' opacity-50' : ''}" id="card-img-wrap-${p.id}">
                 ${badge}
                 ${outOfStockBadge}
                 <img
+                    id="card-main-img-${p.id}"
                     src="${p.image}"
                     alt="${p.name}"
                     loading="lazy"
                     class="w-[85%] h-[85%] object-contain group-hover:scale-105 transition-transform duration-500"
                 >
             </div>
+            ${thumbStrip}
 
             <div class="flex-1 flex flex-col">
                 <div class="text-[10px] md:text-xs text-gray-400 font-black uppercase tracking-widest mb-1.5">${p.category}</div>
@@ -235,6 +283,22 @@ export function renderProducts(gridEl, products, onAdd) {
         card.querySelector('.add-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             onAdd(p);
+        });
+
+        // Thumbnail strip click handlers � swap primary image
+        card.querySelectorAll('.product-img-thumb-dot').forEach((dot) => {
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(dot.dataset.idx);
+                const mainImg = card.querySelector(`#card-main-img-${p.id}`);
+                if (mainImg && p.images[idx]) mainImg.src = p.images[idx];
+                // Update active border
+                card.querySelectorAll('.product-img-thumb-dot').forEach((thumb, i) => {
+                    const isActive = i === idx;
+                    thumb.classList.toggle('is-active', isActive);
+                    thumb.setAttribute('aria-pressed', String(isActive));
+                });
+            });
         });
 
         // Tapping the card body (not the button) opens the quick-view modal

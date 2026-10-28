@@ -148,11 +148,17 @@ class ProductionHubStore {
             const globalThreshold = parseInt(localStorage.getItem('lowStockThreshold')) || 5;
             const minStock = parseInt(p.minStock) || globalThreshold;
             const needsRestock = currentStock <= minStock;
-            let image = p.imageUrl || p.image || '';
+            // Build images array: prefer stored images[], fall back to single imageUrl/image
+            let images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+            if (images.length === 0 && (p.imageUrl || p.image)) {
+                images = [p.imageUrl || p.image];
+            }
+            let image = images[0] || '';
             if (!image || image.includes('aceonlinesa.co.za')) {
                 image = FALLBACK_IMAGE;
+                images = [FALLBACK_IMAGE];
             }
-            return { ...p, openingStock: opening, stockIn, stockOut, currentStock, minStock, needsRestock, image };
+            return { ...p, openingStock: opening, stockIn, stockOut, currentStock, minStock, needsRestock, image, images };
         });
     }
 
@@ -161,11 +167,16 @@ class ProductionHubStore {
         const isEdit = !!productData.id;
         const docId = isEdit ? productData.id : 'PROD-' + Date.now();
 
+        // Normalise images: use provided array, or build from imageUrl
+        const images = Array.isArray(productData.images) ? productData.images.filter(Boolean) : [];
+        if (images.length === 0 && productData.imageUrl) images.push(productData.imageUrl);
+
         const payload = {
             name: productData.name,
             category: productData.category || 'General',
             price: parseFloat(productData.price) || 0,
-            imageUrl: productData.imageUrl || '',
+            imageUrl: images[0] || productData.imageUrl || '',
+            images: images,
             openingStock: parseInt(productData.openingStock) || 0,
             minStock: parseInt(productData.minStock) || 5,
             updatedAt: new Date().toISOString()

@@ -734,6 +734,13 @@ body {
     animation: modalSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-content > form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
 @keyframes modalSlide {
     from {
         opacity: 0;
@@ -778,11 +785,14 @@ body {
 }
 
 .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 24px;
     overflow-y: auto;
 }
 
 .modal-footer {
+    flex-shrink: 0;
     padding: 16px 24px;
     border-top: 1px solid var(--slate-200);
     background-color: var(--slate-50);

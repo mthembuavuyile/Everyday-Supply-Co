@@ -11,9 +11,37 @@ function closeModal(id) {
 }
 
 // Product Modal
+function updateImgPreview(index) {
+    const input = byId(`pImageUrl${index}`);
+    const img = byId(`pImgPreview${index}`);
+    const icon = byId(`pImgIcon${index}`);
+    if (!input || !img || !icon) return;
+    const url = input.value.trim();
+    if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        icon.style.display = 'none';
+        img.onerror = () => {
+            img.style.display = 'none';
+            icon.style.display = 'block';
+        };
+    } else {
+        img.src = '';
+        img.style.display = 'none';
+        icon.style.display = 'block';
+    }
+}
+
 function openProductModal(isEdit = false, id = null) {
     const form = byId('productForm');
     if (form) form.reset();
+
+    // Reset all image previews
+    for (let i = 0; i < 4; i++) {
+        const input = byId(`pImageUrl${i}`);
+        if (input) input.value = '';
+        updateImgPreview(i);
+    }
 
     const title = byId('productModalTitle');
     const idInput = byId('prodEditId');
@@ -26,9 +54,18 @@ function openProductModal(isEdit = false, id = null) {
             if (byId('pName')) byId('pName').value = prod.name;
             if (byId('pCategory')) byId('pCategory').value = prod.category;
             if (byId('pPrice')) byId('pPrice').value = prod.price;
-            if (byId('pImageUrl')) byId('pImageUrl').value = prod.image || prod.imageUrl || '';
             if (byId('pOpeningStock')) byId('pOpeningStock').value = prod.openingStock;
             if (byId('pMinStock')) byId('pMinStock').value = prod.minStock;
+            // Populate image fields from images array (or fall back to single imageUrl)
+            const images = Array.isArray(prod.images) ? prod.images : [];
+            if (images.length === 0 && (prod.imageUrl || prod.image)) {
+                images.push(prod.imageUrl || prod.image);
+            }
+            for (let i = 0; i < 4; i++) {
+                const input = byId(`pImageUrl${i}`);
+                if (input) input.value = images[i] || '';
+                updateImgPreview(i);
+            }
         }
     } else {
         if (title) title.textContent = "Add New Product to Inventory";
@@ -195,12 +232,19 @@ function initForms() {
     if (productForm) {
         productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // Collect all image URLs (filter out empty strings)
+            const images = [];
+            for (let i = 0; i < 4; i++) {
+                const val = (byId(`pImageUrl${i}`)?.value || '').trim();
+                if (val) images.push(val);
+            }
             const data = {
                 id: byId('prodEditId').value,
                 name: byId('pName').value,
                 category: byId('pCategory').value,
                 price: byId('pPrice').value,
-                imageUrl: byId('pImageUrl').value,
+                imageUrl: images[0] || '',
+                images: images,
                 openingStock: byId('pOpeningStock').value,
                 minStock: byId('pMinStock').value
             };

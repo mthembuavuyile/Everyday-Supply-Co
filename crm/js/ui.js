@@ -157,7 +157,10 @@ function renderStock() {
         tr.innerHTML = `
             <td>
                 <div class="product-cell">
-                    <img src="${p.image}" class="product-thumb" onerror="this.src='${FALLBACK_IMAGE}'">
+                    <div style="position:relative;display:inline-block;flex-shrink:0;">
+                        <img src="${p.image}" class="product-thumb" onerror="this.src='${FALLBACK_IMAGE}'">
+                        ${Array.isArray(p.images) && p.images.length > 1 ? `<span style="position:absolute;bottom:-4px;right:-4px;background:var(--primary);color:#fff;font-size:9px;font-weight:700;border-radius:99px;padding:1px 5px;line-height:1.6;">${p.images.length}</span>` : ''}
+                    </div>
                     <div>
                         <div class="product-info-name">${escapeHtml(p.name)}</div>
                         <div class="product-info-id">${escapeHtml(p.id)}</div>

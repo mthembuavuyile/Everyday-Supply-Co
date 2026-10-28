@@ -76,14 +76,20 @@ async function loadLiveProducts() {
       const stockIn = parseInt(data.stockIn) || 0;
       const stockOut = parseInt(data.stockOut) || 0;
       const currentStock = opening + stockIn - stockOut;
+      // Build images array — prefer stored images[], fall back to single imageUrl/image
+      let images = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
+      if (images.length === 0 && (data.imageUrl || data.image)) {
+        images = [data.imageUrl || data.image || FALLBACK_IMAGE];
+      }
+      const primaryImage = images[0] || FALLBACK_IMAGE;
       return {
-        ...data, // Spread remaining fields
+        ...data,
         id: doc.id,
-        // Safety Fallbacks: Prevents app crashes if Firebase data is missing fields
         name: data.name || 'Unnamed Product',
         category: data.category || 'Uncategorized',
         price: typeof data.price === 'number' ? data.price : parseFloat(data.price) || 0,
-        image: data.imageUrl || data.image || FALLBACK_IMAGE,
+        image: primaryImage,
+        images: images,
         currentStock: currentStock,
         inStock: currentStock > 0,
       };
